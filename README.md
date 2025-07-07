@@ -1,5 +1,8 @@
 # Nginx Configuration for rendazhang.com
 
+* **Last Updated:** July 7, 2025, 17:50 (UTC+8)
+* **作者:** 张人大（Renda Zhang）
+
 本仓库存储了 [www.rendazhang.com](https://www.rendazhang.com) 网站的 Nginx 服务器配置。这些配置文件针对生产环境优化，支持 HTTPS、反向代理和安全防护措施。
 
 ## 🚀 服务器环境信息
