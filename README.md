@@ -36,7 +36,9 @@
   - 40 GB SSD
 - **Web 服务器**: Nginx
 - **后端服务**: Python Flask 部署在 Gunicorn + Gevent 上 (绑定 `0.0.0.0:5000`)
+  - 后端项目链接：[Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
 - **前端技术**: 原生 HTML, CSS, JavaScript
+  - 前端项目链接：[Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
 
 ## 📁 配置文件说明
 
