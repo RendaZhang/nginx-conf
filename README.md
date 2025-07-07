@@ -4,6 +4,8 @@
 
 - [Nginx Configuration for rendazhang.com](#nginx-configuration-for-rendazhangcom)
   - [🚀 服务器环境信息](#-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF)
+    - [**后端服务**](#%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1)
+    - [**前端技术**:](#%E5%89%8D%E7%AB%AF%E6%8A%80%E6%9C%AF)
   - [📁 配置文件说明](#-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E)
   - [🧭 关键配置功能 (`nginx.conf`)](#-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD-nginxconf)
   - [🧩 网站功能概述](#-%E7%BD%91%E7%AB%99%E5%8A%9F%E8%83%BD%E6%A6%82%E8%BF%B0)
@@ -35,10 +37,16 @@
   - 1 GB RAM
   - 40 GB SSD
 - **Web 服务器**: Nginx
-- **后端服务**: Python Flask 部署在 Gunicorn + Gevent 上 (绑定 `0.0.0.0:5000`)
-  - 后端项目链接：[Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
-- **前端技术**: 原生 HTML, CSS, JavaScript
-  - 前端项目链接：[Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
+
+### **后端服务**
+
+- Python Flask 部署在 Gunicorn + Gevent 上 (绑定 `0.0.0.0:5000`)
+- 后端项目链接：[Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
+
+### **前端技术**:
+
+- 原生 HTML, CSS, JavaScript
+- 前端项目链接：[Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
 
 ## 📁 配置文件说明
 
