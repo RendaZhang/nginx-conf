@@ -1,3 +1,24 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Nginx Configuration for rendazhang.com](#nginx-configuration-for-rendazhangcom)
+  - [🚀 服务器环境信息](#-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF)
+  - [📁 配置文件说明](#-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E)
+  - [🧭 关键配置功能 (`nginx.conf`)](#-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD-nginxconf)
+  - [🧩 网站功能概述](#-%E7%BD%91%E7%AB%99%E5%8A%9F%E8%83%BD%E6%A6%82%E8%BF%B0)
+  - [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
+    - [目标服务器要求](#%E7%9B%AE%E6%A0%87%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%A6%81%E6%B1%82)
+    - [迁移步骤](#%E8%BF%81%E7%A7%BB%E6%AD%A5%E9%AA%A4)
+    - [验证迁移](#%E9%AA%8C%E8%AF%81%E8%BF%81%E7%A7%BB)
+  - [🔒 证书更新指南](#-%E8%AF%81%E4%B9%A6%E6%9B%B4%E6%96%B0%E6%8C%87%E5%8D%97)
+  - [✅ 改进建议](#-%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE)
+  - [🛠️ 故障排查](#-%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5)
+  - [📎 相关资源](#-%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90)
+  - [🤝 Contributing Guide](#-contributing-guide)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Nginx Configuration for rendazhang.com
 
 * **Last Updated:** July 7, 2025, 17:50 (UTC+8)

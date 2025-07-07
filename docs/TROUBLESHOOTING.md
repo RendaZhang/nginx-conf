@@ -1,15 +1,18 @@
----
-title: NGINX Troubleshooting Guide
-description: Common issues & resolutions encountered in the rendazhang.com stack
----
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [NGINX Troubleshooting Guide](#nginx-troubleshooting-guide)
+  - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+# NGINX Troubleshooting Guide
 
 * **Last Updated:** July 7, 2025, 17:50 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
-## Table of Contents
-
-- [Table of Contents](#table-of-contents)
-- [\[2025-07-07\] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` \& `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
+Common issues & resolutions encountered in the rendazhang.com stack
 
 ## [2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`
 
