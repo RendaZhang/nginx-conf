@@ -1,0 +1,38 @@
+# Default text handling: normalize to LF for cross-platform consistency
+* text=auto eol=lf
+* -crlf
+*.ps1 text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Explicitly mark common config files as text
+*.conf      text
+*params     text
+
+# Binary assets (currently none, examples provided for future additions)
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.svg  -text
+*.zip  binary
+*.tar  binary
+*.gz   binary
+*.tgz  binary
+*.jar  binary
+*.pdf  binary
+*.docx binary
+*.pptx binary
+*.mp4  binary
+*.exe  binary
+*.dll  binary
+*.so   binary
+
+# Documentation
+/docs/** linguist-documentation
+
+# Generated or vendor directories (none present)
+# /vendor/** linguist-vendored
+# /dist/**   linguist-generated
+
+# File generated on 2025-07-07
