@@ -86,7 +86,7 @@ sudo cp -p nginx-conf/* /usr/local/nginx/conf/
 
 # 3. 安装证书 (手动操作，不上传至 Git)
 # 将证书文件放入 /usr/local/nginx/conf/cert/
-# 确保文件名与配置中一致: 
+# 确保文件名与配置中一致:
 #   - rendazhang.com.pem
 #   - rendazhang.com.key
 
@@ -161,7 +161,7 @@ sudo crontab -e
    # 安装 firewalld
    sudo yum install firewalld
    sudo systemctl start firewalld
-   
+
    # 开放必要端口
    sudo firewall-cmd --permanent --add-service=http
    sudo firewall-cmd --permanent --add-service=https
@@ -192,3 +192,16 @@ openssl s_client -connect www.rendazhang.com:443 -servername www.rendazhang.com
 - Flask 文档: [flask.palletsprojects.com](https://flask.palletsprojects.com/)
 
 > **重要提示**: 每次修改配置后，请运行 `nginx -t` 验证配置有效性后再重启服务
+
+## 🤝 Contributing Guide
+- Fork & clone this repo.
+- Install dependencies and **pre-commit**:
+  ```bash
+  pip install pre-commit
+  pre-commit install
+  ```
+- Before every commit, hooks will run automatically. You can trigger them manually with:
+  ```bash
+  pre-commit run --all-files
+  ```
+> ✅ All commits must pass pre-commit checks; CI will block non-conforming PRs.
