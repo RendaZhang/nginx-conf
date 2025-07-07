@@ -3,7 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [NGINX Troubleshooting Guide](#nginx-troubleshooting-guide)
-  - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
+  - [\[2025-07-07\] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` \& `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -27,7 +27,7 @@ Common issues & resolutions encountered in the rendazhang.com stack
   favicon.ico (failed) net::ERR_HTTP2_PROTOCOL_ERROR
   chat (failed)       net::ERR_HTTP2_PROTOCOL_ERROR
   ```
-- 服务器本地 `curl -X POST 127.0.0.1:8080/chat …` 调用正常，说明后端服务 OK。
+- 服务器本地 `curl -X POST 127.0.0.1:5000/chat …` 调用正常，说明后端服务 OK。
 
 **排查过程 (Diagnosis)**
 1. 确认前后端流量经由 HTTP/2。
