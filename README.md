@@ -3,25 +3,25 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Nginx Configuration for rendazhang.com](#nginx-configuration-for-rendazhangcom)
-  - [🚀 服务器环境信息](#-服务器环境信息)
-  - [📁 配置文件说明](#-配置文件说明)
-  - [🧭 关键配置功能 (`nginx.conf`)](#-关键配置功能-nginxconf)
-  - [🧩 网站功能概述](#-网站功能概述)
-  - [🚚 迁移指南](#-迁移指南)
-    - [目标服务器要求](#目标服务器要求)
-    - [迁移步骤](#迁移步骤)
-    - [验证迁移](#验证迁移)
-  - [🔒 证书更新指南](#-证书更新指南)
-  - [✅ 改进建议](#-改进建议)
-  - [🛠️ 故障排查](#️-故障排查)
-  - [📎 相关资源](#-相关资源)
+  - [🚀 服务器环境信息](#-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF)
+  - [📁 配置文件说明](#-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E)
+  - [🧭 关键配置功能 (`nginx.conf`)](#-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD-nginxconf)
+  - [🧩 网站功能概述](#-%E7%BD%91%E7%AB%99%E5%8A%9F%E8%83%BD%E6%A6%82%E8%BF%B0)
+  - [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
+    - [目标服务器要求](#%E7%9B%AE%E6%A0%87%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%A6%81%E6%B1%82)
+    - [迁移步骤](#%E8%BF%81%E7%A7%BB%E6%AD%A5%E9%AA%A4)
+    - [验证迁移](#%E9%AA%8C%E8%AF%81%E8%BF%81%E7%A7%BB)
+  - [🔒 证书更新指南](#-%E8%AF%81%E4%B9%A6%E6%9B%B4%E6%96%B0%E6%8C%87%E5%8D%97)
+  - [✅ 改进建议](#-%E6%94%B9%E8%BF%9B%E5%BB%BA%E8%AE%AE)
+  - [🛠️ 故障排查](#-%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5)
+  - [📎 相关资源](#-%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90)
   - [🤝 Contributing Guide](#-contributing-guide)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 7, 2025, 17:50 (UTC+8)
+* **Last Updated:** July 8, 2025, 09:00 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 本仓库存储了 [www.rendazhang.com](https://www.rendazhang.com) 网站的 Nginx 服务器配置。这些配置文件针对生产环境优化，支持 HTTPS、反向代理和安全防护措施。
@@ -35,7 +35,7 @@
   - 1 GB RAM
   - 40 GB SSD
 - **Web 服务器**: Nginx
-- **后端服务**: Python Flask (运行在 `127.0.0.1:5000`)
+- **后端服务**: Python Flask 部署在 Gunicorn + Gevent 上 (绑定 `0.0.0.0:5000`)
 - **前端技术**: 原生 HTML, CSS, JavaScript
 
 ## 📁 配置文件说明
@@ -62,6 +62,7 @@
 - **网站根目录**: `/usr/local/nginx/RendaZhang`
 - **反向代理**:
   - `/cloudchat/` 路径代理到 `http://127.0.0.1:5000/`
+  - `proxy_read_timeout 300s`/`proxy_send_timeout 300s` 等设置以支持流式传输
   - 仅当 `Referer` 头以 `https://rendazhang.com` 开头时才生效
 - **安全措施**:
   - 阻止访问 `.git`, `.gitignore`, `package.json` 等敏感文件
@@ -91,6 +92,8 @@
 3. **依赖组件**:
    - Python 3.6+
    - Flask 框架
+   - Gunicorn
+   - Gevent
    - 开放的端口: 80 (HTTP), 443 (HTTPS)
 4. **资源规格**:
    - 最低: 1 vCPU, 1GB RAM, 20GB 存储
@@ -114,27 +117,31 @@ sudo cp -p nginx-conf/* /usr/local/nginx/conf/
 # 4. 部署静态网站
 git clone git@gitee.com:yourname/rendazhang.git /usr/local/nginx/RendaZhang
 
-# 5. 部署 Flask 后端 (需单独准备)
-#   假设 Flask 应用部署在 /home/ubuntu/flask-app
+# 5. 部署 Flask 后端 (Gunicorn + Gevent)
+#   假设 Flask 应用部署在 /opt/cloudchat
+  sudo /opt/cloudchat/venv/bin/pip install gunicorn gevent
 #   使用 systemd 管理服务:
-sudo tee /etc/systemd/system/renda-flask.service > /dev/null <<EOF
+  sudo tee /etc/systemd/system/cloudchat.service > /dev/null <<EOF
 [Unit]
-Description=Renda Zhang Flask App
+Description=CloudChat Flask App with Gunicorn
 After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/home/ubuntu/flask-app
-ExecStart=/usr/bin/python3 app.py
+WorkingDirectory=/opt/cloudchat
+Environment="PATH=/opt/cloudchat/venv/bin"
+ExecStart=/opt/cloudchat/venv/bin/gunicorn --worker-class gevent --workers 2 --worker-connections 50 --max-requests 1000 --max-requests-jitter 50 --timeout 300 --bind 0.0.0.0:5000 app:app
 Restart=always
+RestartSec=3
+KillSignal=SIGINT
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl start renda-flask
-sudo systemctl enable renda-flask
+  sudo systemctl daemon-reload
+  sudo systemctl start cloudchat.service
+  sudo systemctl enable cloudchat.service
 
 # 6. 测试并重启 Nginx
 sudo nginx -t  # 验证配置
@@ -201,7 +208,7 @@ sudo crontab -e
 tail -f /usr/local/nginx/logs/error.log
 
 # 检查 Flask 日志
-journalctl -u renda-flask -f
+journalctl -u cloudchat.service -f
 
 # 测试 SSL 配置
 openssl s_client -connect www.rendazhang.com:443 -servername www.rendazhang.com
