@@ -8,6 +8,10 @@
     - [**后端服务**](#%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1)
     - [**前端项目**:](#%E5%89%8D%E7%AB%AF%E9%A1%B9%E7%9B%AE)
   - [📁 项目配置文件说明](#-%E9%A1%B9%E7%9B%AE%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E)
+  - [🔧 Nginx 编译与安装](#-nginx-%E7%BC%96%E8%AF%91%E4%B8%8E%E5%AE%89%E8%A3%85)
+    - [编译步骤](#%E7%BC%96%E8%AF%91%E6%AD%A5%E9%AA%A4)
+    - [启用缓存目录](#%E5%90%AF%E7%94%A8%E7%BC%93%E5%AD%98%E7%9B%AE%E5%BD%95)
+    - [检查缓存是否生效](#%E6%A3%80%E6%9F%A5%E7%BC%93%E5%AD%98%E6%98%AF%E5%90%A6%E7%94%9F%E6%95%88)
   - [🧭 关键配置功能 (`nginx.conf`)](#-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD-nginxconf)
   - [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
     - [示例服务器](#%E7%A4%BA%E4%BE%8B%E6%9C%8D%E5%8A%A1%E5%99%A8)
@@ -81,6 +85,68 @@
 | `mime.types` | MIME 类型映射 |
 
 > ⚠ **注意**: 证书文件(`cert/`, `ssl/`)和日志文件(`logs/`)等敏感/临时文件已通过 `.gitignore` 排除
+
+---
+
+## 🔧 Nginx 编译与安装
+
+下面示例展示了如何编译与部署适用于本仓库配置的 Nginx **1.24.0**。编译参数需与下列输出一致：
+
+```bash
+nginx -V
+# --prefix=/usr/local/nginx \
+# --with-http_stub_status_module \
+# --with-http_ssl_module \
+# --with-http_gzip_static_module \
+# --with-http_v2_module \
+# --add-module=../ngx_cache_purge
+```
+
+### 编译步骤
+
+```bash
+# 安装依赖
+sudo yum install -y gcc make pcre-devel zlib-devel openssl-devel git
+
+# 下载源码
+wget http://nginx.org/download/nginx-1.24.0.tar.gz
+tar zxvf nginx-1.24.0.tar.gz
+cd nginx-1.24.0
+
+# 获取 ngx_cache_purge 模块
+git clone https://github.com/FRiCKLE/ngx_cache_purge.git ../ngx_cache_purge
+
+# 配置并编译
+./configure \
+  --prefix=/usr/local/nginx \
+  --with-http_stub_status_module \
+  --with-http_ssl_module \
+  --with-http_gzip_static_module \
+  --with-http_v2_module \
+  --add-module=../ngx_cache_purge
+make
+sudo make install
+```
+
+### 启用缓存目录
+
+```bash
+id nginx || sudo useradd -r -s /sbin/nologin nginx
+
+sudo mkdir -p /var/cache/nginx
+sudo chown -R nginx:nginx /usr/local/nginx
+sudo chown -R nginx:nginx /var/cache/nginx
+sudo chmod -R 700 /var/cache/nginx
+```
+
+### 检查缓存是否生效
+
+1. 重启 Nginx 后访问动态页面两次，`/var/cache/nginx` 下应生成缓存文件。
+2. 或者查看响应头：
+   ```bash
+   curl -I https://YOUR_DOMAIN/cloudchat/test
+   ```
+   出现 `X-Cache-Status: HIT` 或 `MISS` 表示缓存已启用。
 
 ---
 
