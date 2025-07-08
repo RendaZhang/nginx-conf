@@ -40,14 +40,16 @@
 
 ## 简介
 
-本仓库存储了 **轻量级** 网站的 Nginx 服务器配置。这些配置文件针对生产环境优化，支持 HTTPS、反向代理和安全防护措施。
+本仓库存储了 **轻量级** 网站的 Nginx 服务器配置，主要面向小内存服务器。这些配置文件针对生产环境优化，支持 HTTPS、反向代理和安全防护措施，并具备较强的通用性，可在多种操作系统上使用。文档中的示例以 CentOS 7 为主，你可以按需调整以适配其他系统。
+
+> 重量级解决方案可参考我的云原生项目：[Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
 ---
 
 ## 🚀 服务器环境信息示例
 
 - **服务器位置**: 香港
-- **操作系统**: CentOS 7
+- **操作系统（示例）**: CentOS 7（可根据需要调整至其他系统）
 - **服务器配置**:
   - 2 vCPUs
   - 1 GB RAM
@@ -361,6 +363,7 @@ openssl s_client -connect www.rendazhang.com:443 -servername www.rendazhang.com
 - 前端仓库：[Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
 - 后端仓库：[Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
 - Flask 文档: [flask.palletsprojects.com](https://flask.palletsprojects.com/)
+- 重量级解决方案：[renda-cloud-lab](https://github.com/RendaZhang/renda-cloud-lab)
 
 ---
 
