@@ -5,6 +5,7 @@
 - [NGINX Troubleshooting Guide](#nginx-troubleshooting-guide)
   - [简介](#%E7%AE%80%E4%BB%8B)
   - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
+  - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -60,3 +61,26 @@ Common issues & resolutions encountered in the rendazhang.com stack
 **参考资料 (References)**
 
 - Chrome `net::ERR_HTTP2_PROTOCOL_ERROR` 官方说明
+
+## [2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告
+
+**环境**
+- NGINX 版本：1.24.0
+- 操作系统：CentOS 7
+- 相关模块：proxy_cache、proxy_buffering
+
+**症状 (Symptoms)**
+- 多次访问 `/cloudchat/test` 仍然 `X-Cache-Status: MISS`，`/var/cache/nginx` 为空
+- `error.log` 中出现 `using uninitialized "do_not_cache" variable` 警告
+
+**排查过程 (Diagnosis)**
+1. 确认目录权限及编译参数均正常
+2. 检查配置发现变量 `$do_not_cache` 未默认赋值
+3. 同时在 `/cloudchat/` 中启用了 `proxy_buffering off`
+
+**根因 (Root Cause)**
+未初始化变量导致 `proxy_cache_bypass` 始终生效；而关闭 `proxy_buffering` 时， `proxy_cache` 逻辑不会执行
+
+**解决方案 (Fix)**
+1. 在 `location /cloudchat/` 内添加 `set $do_not_cache 0;`
+2. 仅在需要 SSE/WebSocket 的接口使用 `proxy_buffering off`

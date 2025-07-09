@@ -164,7 +164,7 @@ sudo chmod -R 700 /var/cache/nginx
 - **网站根目录**: `/usr/local/nginx/$StaticFrontendPagesFolder`
 - **反向代理**:
   - `/cloudchat/` 路径代理到 `http://$BackendIP:$Port/`
-  - `proxy_buffering off` 等设置以支持流式传输
+  - `proxy_buffering off` 等设置以支持流式传输（注意：关闭后 `proxy_cache` 将失效）
   - `proxy_read_timeout` 设置需要跟 Gunicorn 的 `timeout` 设置对齐
   - 仅当 `Referer` 头以 `https://$DomainName` 开头时才生效
 - **安全措施**:
