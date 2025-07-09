@@ -6,12 +6,13 @@
   - [简介](#%E7%AE%80%E4%BB%8B)
   - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
   - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
+  - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # NGINX Troubleshooting Guide
 
-* **Last Updated:** July 8, 2025, 21:50 (UTC+8)
+* **Last Updated:** July 9, 2025, 16:40 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -84,3 +85,29 @@ Common issues & resolutions encountered in the rendazhang.com stack
 **解决方案 (Fix)**
 1. 在 `location /cloudchat/` 内添加 `set $do_not_cache 0;`
 2. 仅在需要 SSE/WebSocket 的接口使用 `proxy_buffering off`
+
+## [2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败
+
+**环境**
+- NGINX 版本：1.24.0
+- 操作系统：CentOS 7
+- 相关模块：proxy_pass
+
+**症状 (Symptoms)**
+- 执行 `nginx -t` 报错：
+  ```
+  nginx: [emerg] "proxy_pass" cannot have URI part in location given by regular expression
+  ```
+- 问题出现在需禁用缓存的 SSE/WebSocket 接口。
+
+**排查过程 (Diagnosis)**
+1. 这些接口位于正则 `location`，配置为 `proxy_pass http://127.0.0.1:5000/`。
+2. 另一普通 `location` 使用同一后端但开启缓存。
+3. 查阅官方文档得知，正则 `location` 的 `proxy_pass` 不允许包含 URI 部分。
+
+**根因 (Root Cause)**
+正则 `location` 搭配带 URI 的 `proxy_pass` 违反 NGINX 语法规则。
+
+**解决方案 (Fix)**
+1. 去掉 URI，改为 `proxy_pass http://127.0.0.1:5000;` —— commit `033f374`。
+2. 仍在该 `location` 中保持 `proxy_buffering off` 以支持流式协议。
