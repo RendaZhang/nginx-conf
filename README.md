@@ -141,12 +141,15 @@ sudo chmod -R 700 /var/cache/nginx
 
 ### 检查缓存是否生效
 
-1. 重启 Nginx 后访问动态页面两次，`/var/cache/nginx` 下应生成缓存文件。
+1. 由于配置中 `proxy_cache_min_uses 2`，同一请求需要在第二次访问后才会被写入
+   缓存，因此请连续发送 **三次** 完全相同的请求：缓存会在第二次请求后创建，并在
+   第三次请求时从缓存中返回。
+   - 若只想发送两次请求即可观察到 `HIT`，可将 `proxy_cache_min_uses` 暂时改为 `1`。
 2. 或者查看响应头：
    ```bash
    curl -I https://YOUR_DOMAIN/cloudchat/test
    ```
-   出现 `X-Cache-Status: HIT` 或 `MISS` 表示缓存已启用。
+   当看到 `X-Cache-Status: HIT` 表示缓存生效，`MISS` 则说明尚未命中。
 
 ---
 
