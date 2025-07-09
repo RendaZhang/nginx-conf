@@ -167,6 +167,7 @@ sudo chmod -R 700 /var/cache/nginx
   - `proxy_buffering off` 等设置以支持流式传输（注意：关闭后 `proxy_cache` 将失效）
   - `proxy_read_timeout` 设置需要跟 Gunicorn 的 `timeout` 设置对齐
   - 仅当 `Referer` 头以 `https://$DomainName` 开头时才生效
+  - 通过 `curl -X PURGE http://localhost/cloudchat/purge-cache/<cache_key>` 手动清除缓存，其中 `<cache_key>` 为完整的缓存键（示例：`httpsGETexample.com/index.html`）
 - **安全措施**:
   - 阻止访问 `.git`, `.gitignore`, `package.json` 等敏感文件
 - **自定义错误页面**:
