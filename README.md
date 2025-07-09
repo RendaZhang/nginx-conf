@@ -12,6 +12,8 @@
     - [编译步骤](#%E7%BC%96%E8%AF%91%E6%AD%A5%E9%AA%A4)
     - [启用缓存目录](#%E5%90%AF%E7%94%A8%E7%BC%93%E5%AD%98%E7%9B%AE%E5%BD%95)
     - [检查缓存是否生效](#%E6%A3%80%E6%9F%A5%E7%BC%93%E5%AD%98%E6%98%AF%E5%90%A6%E7%94%9F%E6%95%88)
+    - [缓存规则说明](#%E7%BC%93%E5%AD%98%E8%A7%84%E5%88%99%E8%AF%B4%E6%98%8E)
+    - [手动清理缓存](#%E6%89%8B%E5%8A%A8%E6%B8%85%E7%90%86%E7%BC%93%E5%AD%98)
   - [🧭 关键配置功能 (`nginx.conf`)](#-%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD-nginxconf)
   - [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
     - [示例服务器](#%E7%A4%BA%E4%BE%8B%E6%9C%8D%E5%8A%A1%E5%99%A8)
@@ -37,7 +39,7 @@
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 8, 2025, 21:50 (UTC+8)
+* **Last Updated:** July 9, 2025, 18:35 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -151,6 +153,30 @@ sudo chmod -R 700 /var/cache/nginx
    ```
    当看到 `X-Cache-Status: HIT` 表示缓存生效，`MISS` 则说明尚未命中。
 
+### 缓存规则说明
+
+- 缓存键由 `proxy_cache_key "$scheme$request_method$host$request_uri$is_args$args"` 拼接而成：
+  - `$scheme`：协议
+  - `$request_method`：HTTP 方法
+  - `$host`：主机名
+  - `$request_uri`：路径
+  - `$is_args$args`：查询字符串
+
+  示例：`httpsGETexample.com/index.html?foo=1`。
+
+- 动态缓存目录：`/var/cache/nginx`，`proxy_cache_path` 设置 `inactive=60m`、`max_size=100m`，匹配 `/cloudchat/` 接口并通过 `proxy_cache_valid 200 302 10m` 和 `404 1m` 控制缓存时间。
+- 静态缓存目录：`/tmp/nginx`（备用），当前配置主要使用 `expires 30d` 控制本地静态资源缓存。
+- 缓存文件在指定 `inactive` 时间内未被访问会自动清理，目录超过 `max_size` 时也会淘汰旧文件。
+- **动态缓存**：配置在 `/var/cache/nginx`，`proxy_cache_valid 200 302 10m`，`404` 缓存 1 分钟；若 60 分钟未再次访问会被自动清理。
+- **静态缓存**：目录 `/tmp/nginx`，适用于代理到其他源的静态资源，30 天未访问即失效。
+
+### 手动清理缓存
+
+1. SSH 登录到部署 Nginx 的服务器上。
+2. 执行 `curl -X PURGE http://localhost/cloudchat/purge-cache/<cache_key>`，其中 `<cache_key>` 为完整缓存键（如 `httpsHEADwww.rendazhang.com/cloudchat/test`）。
+3. 如果需要远程调用，可在 `location ~ /cloudchat/purge-cache/(.*)` 中增加 `allow <你的IP>;` 或配置 Basic Auth，再重新加载 Nginx。
+4. 使用 `curl -I https://www.rendazhang.com/cloudchat/test -H "Referer: https://www.rendazhang.com"` 检查缓存是否 HIT 或 MISS。
+5. 通过 `tail -f /usr/local/nginx/logs/error.log` 查看日志，并确认 `/var/cache/nginx` 目录中的文件已被清除。
 ---
 
 ## 🧭 关键配置功能 (`nginx.conf`)

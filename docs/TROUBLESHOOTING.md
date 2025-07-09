@@ -3,16 +3,17 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [NGINX Troubleshooting Guide](#nginx-troubleshooting-guide)
-  - [简介](#%E7%AE%80%E4%BB%8B)
-  - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
-  - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
-  - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
+  - [简介](#简介)
+  - [\[2025-07-07\] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` \& `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
+  - [\[2025-07-09\] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-缓存文件未生成与-uninitialized-variable-警告)
+  - [\[2025-07-09\] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-正则-location-中-proxy_pass-带-uri-导致启动失败)
+  - [\[2025-07-10\] `proxy_cache_purge` 始终 404](#2025-07-10-proxy_cache_purge-始终-404)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # NGINX Troubleshooting Guide
 
-* **Last Updated:** July 9, 2025, 16:40 (UTC+8)
+* **Last Updated:** July 9, 2025, 18:35 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -111,3 +112,26 @@ Common issues & resolutions encountered in the rendazhang.com stack
 **解决方案 (Fix)**
 1. 去掉 URI，改为 `proxy_pass http://127.0.0.1:5000;` —— commit `033f374`。
 2. 仍在该 `location` 中保持 `proxy_buffering off` 以支持流式协议。
+
+## [2025-07-10] `proxy_cache_purge` 始终 404
+
+**环境**
+- NGINX 版本：1.24.0
+- 操作系统：CentOS 7
+- 相关模块：ngx_cache_purge
+
+**症状 (Symptoms)**
+- 执行 `curl -X PURGE http://localhost/cloudchat/purge-cache/<cache_key>` 返回 404
+- 日志无明显报错，缓存键确认无误
+
+**排查过程 (Diagnosis)**
+1. 查看配置发现 `location ~ /cloudchat/purge-cache(/.*)`，捕获组错误
+2. 正则未正确匹配 `<cache_key>`，导致 `$1` 为空
+3. 将规则改为 `location ~ /cloudchat/purge-cache/(.*)` 后重载 Nginx
+
+**根因 (Root Cause)**
+括号放置位置错误，`proxy_cache_purge` 未获取到待清理的 key
+
+**解决方案 (Fix)**
+1. 更新配置为 `location ~ /cloudchat/purge-cache/(.*) { ... }` —— commit `cac19e0`
+2. 重载 Nginx 后再次执行 `curl -X PURGE ...`，终端返回 “Successful purge”
