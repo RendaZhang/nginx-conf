@@ -67,16 +67,26 @@ sudo /opt/cloudchat/venv/bin/pip install gunicorn gevent
 sudo tee /etc/systemd/system/cloudchat.service > /dev/null <<EOF
 [Unit]
 Description=CloudChat Flask App with Gunicorn
-After=network.target
+After=network.target redis-server.service
 
 [Service]
 User=root
 WorkingDirectory=/opt/cloudchat
 Environment="PATH=/opt/cloudchat/venv/bin"
+Environment="DASHSCOPE_API_KEY=***"
+Environment="DEEPSEEK_API_KEY=***"
+Environment="OPENAI_API_KEY=***"
+Environment="FLASK_SECRET_KEY=***"
+Environment="REDIS_PASSWORD=***"
 ExecStart=/opt/cloudchat/venv/bin/gunicorn --worker-class gevent --workers 2 --worker-connections 50 --max-requests 1000 --max-requests-jitter 50 --timeout 300 --bind 0.0.0.0:5000 app:app
+
 Restart=always
 RestartSec=3
 KillSignal=SIGINT
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+OOMScoreAdjust=-100
 
 [Install]
 WantedBy=multi-user.target
