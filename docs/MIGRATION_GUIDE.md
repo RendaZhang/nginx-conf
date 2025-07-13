@@ -318,12 +318,13 @@ sudo rm -f /etc/systemd/system/CmsGoAgent.service
 
 # 4. 深度清理
 
-# 删除残留文件
+# 检查并删除如下的残留文件
 /usr/local/cloudmonitor/  # 云监控残留
 /usr/local/aegis/          # 安骑士残留
 /etc/systemd/system/       # 检查是否有阿里云服务单元
-# 清理安装包缓存
+# 清理安装包缓存：
 sudo apt clean
+# 自动删除不再需要的依赖包：
 sudo apt autoremove
 
 # 5. 卸载后重启，确认无异常进程
@@ -530,8 +531,16 @@ sudo systemctl restart redis
 每周清理：
 
 ```bash
-sudo journalctl --vacuum-size=50M  # 清理日志
+# 清理 journal 日志
+sudo journalctl --vacuum-size=50M
+
+# 清空 Nginx 的错误日志
+sudo truncate -s 0 /var/log/nginx/error.log
+
+# 清理安装包缓存
 sudo apt clean && sudo rm -rf /var/cache/apt/*
+# 自动删除不再需要的依赖包
+sudo apt autoremove
 ```
 
 如果有需要，可以使用内存限制器：
