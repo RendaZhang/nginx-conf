@@ -39,6 +39,7 @@
       - [配置 OOM Killer 优先级](#%E9%85%8D%E7%BD%AE-oom-killer-%E4%BC%98%E5%85%88%E7%BA%A7-1)
   - [迁移完成后检查](#%E8%BF%81%E7%A7%BB%E5%AE%8C%E6%88%90%E5%90%8E%E6%A3%80%E6%9F%A5)
     - [检查 Nginx](#%E6%A3%80%E6%9F%A5-nginx)
+      - [Nginx 缓存](#nginx-%E7%BC%93%E5%AD%98)
     - [检查后端](#%E6%A3%80%E6%9F%A5%E5%90%8E%E7%AB%AF)
     - [检查前端](#%E6%A3%80%E6%9F%A5%E5%89%8D%E7%AB%AF)
 
@@ -915,7 +916,9 @@ sudo systemctl daemon-reload
 sudo systemctl restart nginx
 ```
 
-检查 Nginx 缓存是否生效
+#### Nginx 缓存
+
+检查 Nginx 缓存是否生效：
 
 ```bash
 # 检查 x-cache-status: 是 HIT 或 MISS
@@ -936,6 +939,22 @@ rm -rf /var/cache/nginx/*
 
 # 如果需要远程调用，可在 `location ~ /cloudchat/purge-cache/(.*)` 中增加 `allow <你的IP>;` 或配置 Basic Auth，再重新加载 Nginx。
 ```
+
+缓存规则说明：
+
+* 缓存键由 `proxy_cache_key "$host$request_uri"` （位于 `nginx.conf`）拼接而成：
+  * `$host`：主机名
+  * `$request_uri`：路径
+
+* 缓存键示例：`wwww.rendazhang.com/cloudchat/test`。
+
+* 动态缓存目录：`/var/cache/nginx`，`proxy_cache_path` 设置 `inactive=60m`、`max_size=100m`，匹配 `/cloudchat/` 接口并通过 `proxy_cache_valid 200 302 10m` 和 `404 1m` 控制缓存时间。
+
+* 静态缓存目录：`/tmp/nginx`（备用），当前配置主要使用 `expires 30d` 控制本地静态资源缓存。
+
+* 缓存文件在指定 `inactive` 时间内未被访问会自动清理，目录超过 `max_size` 时也会淘汰旧文件。
+
+* 动态缓存：配置在 `/var/cache/nginx`，`proxy_cache_valid 200 302 10m`，`404` 缓存 1 分钟；若 60 分钟未再次访问会被自动清理。
 
 ### 检查后端
 
