@@ -4,7 +4,7 @@
 - [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
   - [简介](#%E7%AE%80%E4%BB%8B)
     - [示例目标服务器](#%E7%A4%BA%E4%BE%8B%E7%9B%AE%E6%A0%87%E6%9C%8D%E5%8A%A1%E5%99%A8)
-      - [操作系统](#%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F)
+      - [基础信息](#%E5%9F%BA%E7%A1%80%E4%BF%A1%E6%81%AF)
       - [Nginx 版本](#nginx-%E7%89%88%E6%9C%AC)
       - [依赖组件](#%E4%BE%9D%E8%B5%96%E7%BB%84%E4%BB%B6)
       - [资源规格](#%E8%B5%84%E6%BA%90%E8%A7%84%E6%A0%BC)
@@ -55,7 +55,13 @@
 
 ### 示例目标服务器
 
-#### 操作系统
+#### 基础信息
+
+Operation System: Ubuntu 24.04 LTS
+
+Region: Hong Kong
+
+ISP: Alibaba.com LLC
 
 ```bash
 # 显示操作系统的版本和内核信息
@@ -68,9 +74,19 @@ Operating System: Ubuntu 24.04 LTS
  Hardware Vendor: Alibaba Cloud
   Hardware Model: Alibaba Cloud ECS
 ...
+# 所在地区：
+echo "$(curl -s http://ip-api.com/json/$(curl -s ifconfig.me) | jq -r '.country')"
+# Output:
+Hong Kong
+# 云服务商：
+echo "$(curl -s http://ip-api.com/json/$(curl -s ifconfig.me) | jq -r '.isp')"
+# Output:
+Alibaba.com LLC
 ```
 
 #### Nginx 版本
+
+nginx/1.24+
 
 ```bash
 nginx -v
@@ -79,6 +95,14 @@ nginx version: nginx/1.24.0 (Ubuntu)
 ```
 
 #### 依赖组件
+
+python 3.12+
+
+Gunicorn 23.0.0
+
+Gevent 25.5.1
+
+Port: 22/tcp, 80/tcp, 443/tcp, 5000/tcp
 
 ```bash
 # Python 版本
