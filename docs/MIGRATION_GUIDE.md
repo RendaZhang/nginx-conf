@@ -49,6 +49,8 @@
 * **Last Updated:** July 13, 2025, 20:30 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
+---
+
 ## 简介
 
 本文档详细记录了从 **CentOS 7** 到 **Ubuntu 24.04 LTS** 的服务器迁移过程，特别针对轻量级个人网站 (www.rendazhang.com) 的优化部署。迁移核心目标是：
