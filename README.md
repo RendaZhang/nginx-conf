@@ -66,14 +66,19 @@
 
 | 文件 | 作用 |
 |------|------|
-| `nginx.conf` | 主配置文件 |
+| `nginx.conf` | 主配置文件，加载 `modules-enabled/` 与虚拟主机配置 |
 | `fastcgi.conf` | FastCGI 相关配置 |
 | `fastcgi_params` | FastCGI 参数设置 |
 | `scgi_params` | SCGI 协议参数 |
 | `uwsgi_params` | uWSGI 协议参数 |
+| `proxy_params` | 代理通用头设置 |
 | `mime.types` | MIME 类型映射 |
+| `modules-enabled/` | 已启用的动态模块 |
+| `sites-available/` | 可用站点配置 |
+| `sites-enabled/` | 实际启用站点的软链接 |
+| `snippets/` | 可复用的配置片段 |
 
-> ⚠ **注意**: 证书文件 (`cert/`, `ssl/`) 和日志文件 (`logs/`) 等敏感 / 临时文件已通过 `.gitignore` 排除
+> ⚠ **注意**: 证书目录 (`cert/`, `ssl/`) 和备份文件 (`backup/`) 等敏感 / 临时内容已通过 `.gitignore` 排除
 
 ---
 
