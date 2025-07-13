@@ -168,13 +168,13 @@ PORT     STATE SERVICE
 
 目录位置: `/var/www/rendazhang`
 
-相关项目: [Nginx Conf](https://github.com/RendaZhang/nginx-conf)
+相关项目: [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
 
 #### 后端代码
 
 目录位置: `/opt/cloudchat`
 
-相关项目: [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
+相关项目: [Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
 
 #### Nginx 配置
 
