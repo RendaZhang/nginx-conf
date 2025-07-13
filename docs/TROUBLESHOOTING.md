@@ -11,7 +11,6 @@
   - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
   - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
   - [[2025-07-10] `proxy_cache_purge` 始终 404](#2025-07-10-proxy_cache_purge-%E5%A7%8B%E7%BB%88-404)
-- [NGINX Troubleshooting Guide](#nginx-troubleshooting-guide-1)
   - [[2025-07-13] `proxy_cache_purge` 返回 "Empty reply" 错误](#2025-07-13-proxy_cache_purge-%E8%BF%94%E5%9B%9E-empty-reply-%E9%94%99%E8%AF%AF)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -198,8 +197,6 @@
 2. 重载 Nginx 后再次执行 `curl -X PURGE ...`，终端返回 “Successful purge”
 
 ---
-
-# NGINX Troubleshooting Guide
 
 ## [2025-07-13] `proxy_cache_purge` 返回 "Empty reply" 错误
 
