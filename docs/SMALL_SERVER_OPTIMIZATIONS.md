@@ -24,12 +24,25 @@
 
 # 针对小内存服务器的优化和增强建议
 
-* **Last Updated:** July 13, 2025, 18:10 (UTC+8)
+* **Last Updated:** July 13, 2025, 20:20 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
+
+---
 
 ## 简介
 
-本文是针对 **小内存** 服务器所提供的建议和优化，并且以 Ubuntu 24 系统作为例子。
+本文档旨在为运行在 **小内存环境**（如 1GB 或更少内存）的服务器提供优化建议和增强措施，以确保服务的稳定性和性能。
+
+文档以 Ubuntu 24 操作系统为例，详细介绍了从系统配置（如 systemd 资源控制）、服务部署（如轻量级 WSGI 服务器选择）到应用层优化（如会话管理）的全方位策略。
+
+这些建议特别适用于以下场景：
+
+- 个人项目或小型应用部署
+- 预算有限的云服务器 / VPS 环境
+- 资源受限的边缘计算节点
+- 临时测试或开发环境
+
+---
 
 ## systemd 资源策略
 
@@ -107,6 +120,8 @@ MemoryMax: 不设
 
 Restart: 由 .timer 触发；无需
 
+---
+
 ## 速率限制:
 
 ```nginx
@@ -117,6 +132,8 @@ limit_req_zone $binary_remote_addr zone=flask_limit:10m rate=5r/s;
 limit_req zone=flask_limit burst=10 nodelay;
 ```
 
+---
+
 ## 使用轻量级 WSGI 服务器
 
 - 使用 Gunicorn + Gevent 作为 WSGI 服务器
@@ -126,6 +143,8 @@ limit_req zone=flask_limit burst=10 nodelay;
 pip install gunicorn
 gunicorn -w 2 -k gevent your_app:app
 ```
+
+---
 
 ## 日志监控:
 
@@ -156,11 +175,15 @@ glances
 
 使用 glances 可以实现 Web-based 界面的远程监控，支持提醒功能和插件扩展。
 
+---
+
 ## 设置交换空间
 
 如果尚未设置，可以参考如下操作步骤：
 
-具体可以参考文档：[Ubuntu 24 设置交换空间](./MIGRATION_GUIDE.md#ubuntu-24-设置交换空间)
+具体可以参考文档：[Ubuntu 24 设置交换空间](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#ubuntu-24-%E8%AE%BE%E7%BD%AE%E4%BA%A4%E6%8D%A2%E7%A9%BA%E9%97%B4)
+
+---
 
 ## 后端服务相关的调整建议
 

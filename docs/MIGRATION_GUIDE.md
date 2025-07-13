@@ -3,15 +3,15 @@
 
 - [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
   - [简介](#%E7%AE%80%E4%BB%8B)
+    - [关键迁移变化](#%E5%85%B3%E9%94%AE%E8%BF%81%E7%A7%BB%E5%8F%98%E5%8C%96)
     - [示例目标服务器](#%E7%A4%BA%E4%BE%8B%E7%9B%AE%E6%A0%87%E6%9C%8D%E5%8A%A1%E5%99%A8)
       - [基础信息](#%E5%9F%BA%E7%A1%80%E4%BF%A1%E6%81%AF)
-      - [Nginx 版本](#nginx-%E7%89%88%E6%9C%AC)
-      - [依赖组件](#%E4%BE%9D%E8%B5%96%E7%BB%84%E4%BB%B6)
-      - [资源规格](#%E8%B5%84%E6%BA%90%E8%A7%84%E6%A0%BC)
-    - [关键目录和项目](#%E5%85%B3%E9%94%AE%E7%9B%AE%E5%BD%95%E5%92%8C%E9%A1%B9%E7%9B%AE)
+      - [服务矩阵](#%E6%9C%8D%E5%8A%A1%E7%9F%A9%E9%98%B5)
+    - [关键目录结构和项目](#%E5%85%B3%E9%94%AE%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84%E5%92%8C%E9%A1%B9%E7%9B%AE)
       - [前端代码](#%E5%89%8D%E7%AB%AF%E4%BB%A3%E7%A0%81)
       - [后端代码](#%E5%90%8E%E7%AB%AF%E4%BB%A3%E7%A0%81)
       - [Nginx 配置](#nginx-%E9%85%8D%E7%BD%AE)
+    - [迁移验证清单](#%E8%BF%81%E7%A7%BB%E9%AA%8C%E8%AF%81%E6%B8%85%E5%8D%95)
   - [迁移前准备](#%E8%BF%81%E7%A7%BB%E5%89%8D%E5%87%86%E5%A4%87)
     - [旧服务器（CentOS 7）备份](#%E6%97%A7%E6%9C%8D%E5%8A%A1%E5%99%A8centos-7%E5%A4%87%E4%BB%BD)
     - [新服务器准备](#%E6%96%B0%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%87%86%E5%A4%87)
@@ -46,82 +46,95 @@
 
 # 🚚 迁移指南
 
-* **Last Updated:** July 13, 2025, 18:30 (UTC+8)
+* **Last Updated:** July 13, 2025, 20:30 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ## 简介
 
-本文的迁移目标服务器的系统以 Ubuntu 24 为例（从 CentOS 7 迁移到 Ubuntu 24）。
+本文档详细记录了从 **CentOS 7** 到 **Ubuntu 24.04 LTS** 的服务器迁移过程，特别针对轻量级个人网站 (www.rendazhang.com) 的优化部署。迁移核心目标是：
+
+1. 保持服务零中断（通过 DNS TTL 调整实现平滑切换）
+2. 适配 Ubuntu 24.04 新特性（systemd 资源限制、AppArmor 安全策略）
+3. 优化 1GB 内存服务器的资源利用率
+4. 解决 CentOS 到 Ubuntu 的配置差异问题（特别是 Nginx 动态模块）
+
+### 关键迁移变化
+
+| 组件         | CentOS 7 配置                 | Ubuntu 24.04 配置               | 注意事项                     |
+|--------------|-------------------------------|--------------------------------|------------------------------|
+| **运行用户** | `nginx`                       | `www-data`                      | 需检查文件权限               |
+| **Nginx 路径** | `/usr/local/nginx`          | `/etc/nginx`                    | 配置目录结构变化             |
+| **Python**   | 3.6 (系统自带)                | 3.12 (需 venv)                  | 虚拟环境必需                 |
+| **服务管理** | `systemctl`                   | `systemd` with cgroup 限制      | 新增 MemoryMax 限制          |
+| **防火墙**   | firewalld / ISP 自带的防火墙   | ufw / ISP 自带的防火墙           | 如果同一个 ISP 则不需要迁移   |
+| **PURGE 模块**| 源码编译                      | `libnginx-mod-http-cache-purge` | 需版本匹配验证               |
 
 ### 示例目标服务器
 
 #### 基础信息
 
-Operation System: Ubuntu 24.04 LTS
+* 操作系统: Ubuntu 24.04 LTS
+* 地区: 香港
+* ISP: 阿里云
 
-Region: Hong Kong
-
-ISP: Alibaba.com LLC
+参考命令：
 
 ```bash
-# 显示操作系统的版本和内核信息
-hostnamectl
-# Output:
-...
-Operating System: Ubuntu 24.04 LTS
-          Kernel: Linux 6.8.0-40-generic
-    Architecture: x86-64
- Hardware Vendor: Alibaba Cloud
-  Hardware Model: Alibaba Cloud ECS
-...
-# 所在地区：
-echo "$(curl -s http://ip-api.com/json/$(curl -s ifconfig.me) | jq -r '.country')"
-# Output:
-Hong Kong
-# 云服务商：
-echo "$(curl -s http://ip-api.com/json/$(curl -s ifconfig.me) | jq -r '.isp')"
-# Output:
+# 系统信息
+$ hostnamectl
+  Operating System: Ubuntu 24.04 LTS
+            Kernel: Linux 6.8.0-40-generic
+      Architecture: x86-64
+
+# 地区验证
+$ curl -s ip-api.com/json | jq '.country + " - " + .isp'
+"Hong Kong - Alibaba.com LLC"
+
+# 云服务商验证
+$ curl -s http://ip-api.com/json/$(curl -s ifconfig.me) | jq -r '.isp'
 Alibaba.com LLC
 ```
 
-#### Nginx 版本
+#### 服务矩阵
 
-nginx/1.24+
+| 服务        | 版本           | 端口     | 资源限制       |
+|-------------|---------------|---------|----------------|
+| Nginx       | 1.24.0        | 80/443  | 不设           |
+| Redis       | 7.0.15        | 6379    | MemoryMax=256M |
+| Python      | 3.12.3        | -       | -              |
+| Flask       | 3.1.1         | -       | -              |
+| Gunicorn    | 23.0.0        | 5000    | MemoryMax=600M |
+| Gevent      | 25.5.1        | -       | -              |
+
+> 资源规格推荐：**2 vCPU / 2GB RAM / 40GB 存储**（最小 1 vCPU / 1GB RAM / 20GB 存储）
+
+参考命令：
 
 ```bash
-nginx -v
-# Output:
+# Nginx 版本
+$ nginx -v
 nginx version: nginx/1.24.0 (Ubuntu)
-```
 
-#### 依赖组件
+# Redis 版本
+$ redis-cli --version
+redis-cli 7.0.15
 
-python 3.12+
-
-Gunicorn 23.0.0
-
-Gevent 25.5.1
-
-Port: 22/tcp, 80/tcp, 443/tcp, 5000/tcp
-
-```bash
 # Python 版本
-python3 --version
+$ python3 --version
 Python 3.12.3
 
 # Flask 框架
-/opt/cloudchat/venv/bin/pip show flask | grep Version
+$ /opt/cloudchat/venv/bin/pip show flask | grep Version
 Version: 3.1.1
 
 # Gunicorn + Gevent
-/opt/cloudchat/venv/bin/pip show Gunicorn | grep Version
+$ /opt/cloudchat/venv/bin/pip show Gunicorn | grep Version
 Version: 23.0.0
-/opt/cloudchat/venv/bin/pip show Gevent | grep Version
+$ /opt/cloudchat/venv/bin/pip show Gevent | grep Version
 Version: 25.5.1
 
 # 开放的端口
-sudo nmap -sT -O localhost
-# Output:
+$ sudo nmap -sT -O localhost
 ...
 PORT     STATE SERVICE
 22/tcp   open  ssh
@@ -131,12 +144,23 @@ PORT     STATE SERVICE
 ...
 ```
 
-#### 资源规格
+### 关键目录结构和项目
 
-- 最低: 1 vCPU, 1GB RAM, 20GB 存储
-- 推荐: 2 vCPU, 2GB RAM, 40GB 存储
-
-### 关键目录和项目
+```tree
+/
+├── etc
+│   ├── nginx/                   # Nginx 主配置
+│   │   ├── sites-enabled/       # 虚拟主机配置
+│   │   └── modules-enabled/     # 动态模块加载
+│   └── redis/                   # Redis 配置
+├── var
+│   ├── www/rendazhang/          # 前端静态资源
+│   └── cache/nginx/             # 代理缓存目录
+└── opt
+    └── cloudchat/               # 后端应用
+        ├── venv/                # Python 虚拟环境
+        └── app.py               # Flask 主程序
+```
 
 #### 前端代码
 
@@ -155,6 +179,14 @@ PORT     STATE SERVICE
 目录位置: `/etc/nginx`
 
 相关项目: [Nginx Conf](https://github.com/RendaZhang/nginx-conf)
+
+### 迁移验证清单
+
+1. [x] HTTPS 证书自动续期（Certbot）
+2. [x] Redis 内存限制（maxmemory 64mb）
+3. [x] Gunicorn 流式响应测试
+4. [x] Nginx 缓存清除功能（PURGE）
+5. [ ] 压力测试（siege -c 50）
 
 ---
 
@@ -192,7 +224,7 @@ df -h
 
 ### 新服务器准备
 
-新服务器配置：2 vCPU / 1 GiB - ESSD云盘 / 40 GiB - Ubuntu 24.04
+新服务器配置：2 vCPU / 1 GiB - ESSD 云盘 / 40 GiB - Ubuntu 24.04
 
 #### 基础配置
 
