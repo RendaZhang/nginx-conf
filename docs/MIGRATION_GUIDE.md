@@ -15,6 +15,7 @@
   - [迁移前准备](#%E8%BF%81%E7%A7%BB%E5%89%8D%E5%87%86%E5%A4%87)
     - [旧服务器（CentOS 7）备份](#%E6%97%A7%E6%9C%8D%E5%8A%A1%E5%99%A8centos-7%E5%A4%87%E4%BB%BD)
     - [新服务器准备](#%E6%96%B0%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%87%86%E5%A4%87)
+      - [基础配置](#%E5%9F%BA%E7%A1%80%E9%85%8D%E7%BD%AE)
       - [删除服务器的自带服务](#%E5%88%A0%E9%99%A4%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E8%87%AA%E5%B8%A6%E6%9C%8D%E5%8A%A1)
       - [检测其他不需要的后台程序](#%E6%A3%80%E6%B5%8B%E5%85%B6%E4%BB%96%E4%B8%8D%E9%9C%80%E8%A6%81%E7%9A%84%E5%90%8E%E5%8F%B0%E7%A8%8B%E5%BA%8F)
       - [安全建议](#%E5%AE%89%E5%85%A8%E5%BB%BA%E8%AE%AE)
@@ -35,7 +36,6 @@
       - [安装和配置 Nginx](#%E5%AE%89%E8%A3%85%E5%92%8C%E9%85%8D%E7%BD%AE-nginx)
       - [目录与用户约定](#%E7%9B%AE%E5%BD%95%E4%B8%8E%E7%94%A8%E6%88%B7%E7%BA%A6%E5%AE%9A)
       - [SSL 证书](#ssl-%E8%AF%81%E4%B9%A6)
-      - [防火墙](#%E9%98%B2%E7%81%AB%E5%A2%99)
       - [配置 OOM Killer 优先级](#%E9%85%8D%E7%BD%AE-oom-killer-%E4%BC%98%E5%85%88%E7%BA%A7-1)
   - [迁移完成后检查](#%E8%BF%81%E7%A7%BB%E5%AE%8C%E6%88%90%E5%90%8E%E6%A3%80%E6%9F%A5)
     - [检查 Nginx](#%E6%A3%80%E6%9F%A5-nginx)
@@ -149,10 +149,10 @@ tar -czvf frontend_backup.tar.gz /usr/local/nginx/RendaZhang
 # 后端备份
 tar -czvf backend_backup.tar.gz /opt/cloudchat
 
-# Nginx配置备份
+# Nginx 配置备份
 tar -czvf nginx_conf_backup.tar.gz /usr/local/nginx/conf
 
-# SSH密钥备份
+# SSH 密钥备份
 cp ~/.ssh/authorized_keys authorized_keys_backup
 ```
 
@@ -169,6 +169,26 @@ df -h
 ### 新服务器准备
 
 新服务器配置：2 vCPU / 1 GiB - ESSD云盘 / 40 GiB - Ubuntu 24.04
+
+#### 基础配置
+
+```bash
+# 使用远程连接登录
+# 修改 存储 SSH 公钥的文件，加上从旧服务器备份的 SSH 密钥
+vi ~/.ssh/authorized_keys
+```
+
+如果端口是用云服务自带的防火墙管理的，比如阿里云的内置的虚拟防火墙功能，则直接修改即可，不需要额外配置比如 ufw 防火墙工具。
+
+如果使用了 ufw 防火墙工具，则需要做以下操作：
+
+```bash
+sudo ufw allow OpenSSH # 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 5000/tcp
+sudo ufw --force enable
+```
 
 #### 删除服务器的自带服务
 
@@ -786,19 +806,6 @@ sudo systemctl reload nginx
 
 # 查看 Nginx 状态：
 sudo systemctl status nginx
-```
-
-#### 防火墙
-
-如果防火墙端口是用别的方式管理的，比如阿里云的内置的虚拟防火墙功能，则另外修改即可，不需要额外配置比如 ufw 防火墙工具。
-
-如果使用了 ufw 防火墙工具，则需要做以下操作：
-
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw --force enable
 ```
 
 #### 配置 OOM Killer 优先级
