@@ -231,15 +231,50 @@ df -h
 
 #### 基础配置
 
+配置远程 SSH 连接登录：
+
 ```bash
-# 使用远程连接登录
 # 修改 存储 SSH 公钥的文件，加上从旧服务器备份的 SSH 密钥
 vi ~/.ssh/authorized_keys
 ```
 
-如果端口是用云服务自带的防火墙管理的，比如阿里云的内置的虚拟防火墙功能，则直接修改即可，不需要额外配置比如 ufw 防火墙工具。
+网络超时设置会导致 SSH 连接自动断开问题，可以按照下面的步骤进行设置修改。
 
-如果使用了 ufw 防火墙工具，则需要做以下操作：
+1. SSH 服务端配置，打开 `/etc/ssh/sshd_config`，添加/修改以下参数：
+
+    ```bash
+    # 每 60 秒发送一次保活包
+    ClientAliveInterval 60
+    # 允许 3 次无响应才断开
+    ClientAliveCountMax 3
+    # 禁用 DNS 反查加速连接
+    UseDNS no
+    # 提高登录等待时间（小内存服务器响应慢）
+    LoginGraceTime 120
+    ```
+
+2. 重启 SSH 服务：
+
+    ```bash
+    sudo systemctl restart ssh
+    ```
+
+3. 内核网络参数优化，打开 `/etc/sysctl.conf`，添加：
+
+    ```bash
+    # TCP 保活设置（单位：秒）
+    net.ipv4.tcp_keepalive_time = 60
+    net.ipv4.tcp_keepalive_intvl = 30
+    net.ipv4.tcp_keepalive_probes = 3
+    ```
+
+4. 应用配置：
+
+    ```bash
+    sudo sysctl -p
+    ```
+
+如果端口是用云服务自带的防火墙管理的，比如阿里云的内置的虚拟防火墙功能，则直接修改即可，不需要额外配置比如 ufw 防火墙工具。如果使用了 ufw 防火墙工具，则需要做以下操作：
 
 ```bash
 sudo ufw allow OpenSSH # 22/tcp
@@ -813,12 +848,40 @@ sudo systemctl restart nginx
 * CentOS 7 : 主目录 (/usr/local/nginx) + 静态站点 (/usr/local/nginx/RendaZhang) + 缓存 (/var/cache/nginx) + 运行用户 (nginx)
 * Ubuntu 24 : 主目录 (/usr/sbin/nginx) + 配置 (/etc/nginx) + 静态站点 (/var/www/rendazhang) + 缓存 (相同) + 运行用户 (www-data)
 
-启用缓存目录（如果不存在）：
+配置 `user www-data` 后，需要确保 `/var/log/nginx`、`/var/www/rendazhang`、/`var/cache/nginx` 和 `/run/nginx.pid` 对 `www-data` 用户有足够的权限。
+
+使用以下命令检查 Nginx 的关键目录的权限：
 
 ```bash
+ls -ld /var/log/nginx /var/www/rendazhang /var/cache/nginx
+```
+
+检查日志文件目录：
+
+```bash
+# Nginx 需要写入日志文件。
+# 确保 www-data 用户有写权限，如果没有，请执行如下操作：
+sudo chown -R www-data:www-data /var/log/nginx
+sudo chmod -R 755 /var/log/nginx
+```
+
+检查网站文件目录：
+
+```bash
+# Nginx 需要读取网站文件。
+# 确保 www-data 用户有读权限，如果没有，请执行如下操作：
+sudo chown -R www-data:www-data /var/www/rendazhang
+sudo chmod -R 755 /var/www/rendazhang
+```
+
+检查缓存目录：
+
+```bash
+# Nginx 需要写入缓存文件。
+# 启用缓存目录（如果不存在）：
 sudo mkdir -p /var/cache/nginx
 # 使用 Ubuntu 默认运行用户 www-data
-sudo chown -R www-data:www-data /var/www/rendazhang /var/cache/nginx
+sudo chown -R www-data:www-data /var/cache/nginx
 ```
 
 #### SSL 证书
