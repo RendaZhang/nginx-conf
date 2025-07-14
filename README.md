@@ -6,7 +6,7 @@
   - [简介](#%E7%AE%80%E4%BB%8B)
   - [服务器环境信息](#%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF)
     - [**后端服务**](#%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1)
-    - [**前端项目**:](#%E5%89%8D%E7%AB%AF%E9%A1%B9%E7%9B%AE)
+    - [**前端代码**](#%E5%89%8D%E7%AB%AF%E4%BB%A3%E7%A0%81)
   - [配置文件说明](#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E)
   - [关键配置功能](#%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD)
   - [配置架构示意图](#%E9%85%8D%E7%BD%AE%E6%9E%B6%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE)
@@ -26,7 +26,7 @@
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 14, 2025, 16:00 (UTC+8)
+* **Last Updated:** July 14, 2025, 18:30 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -57,12 +57,12 @@
 ### **后端服务**
 
 - Python Flask 部署在 Gunicorn + Gevent 上
-- 具体情况和部署操作请参考后端项目：📁 [Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
+- 具体代码请参考后端项目：📁 [Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
 
-### **前端项目**:
+### **前端代码**
 
 - 原生 HTML, CSS, Bootstrap, JavaScript
-- 具体操作和网站功能描述请参考前端项目：📁 [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
+- 具体代码和网站页面功能描述请参考前端项目：📁 [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
 
 ---
 
@@ -127,7 +127,7 @@
 
 ## 配置架构示意图
 
-图形版本
+Mermaid Flow 图示：
 
 ```mermaid
 graph TD
@@ -140,33 +140,6 @@ graph TD
   server -->|Proxy| gunicorn
   gunicorn --> flask
   server --> cache
-```
-
-ASCII 架构图版本
-
-```plaintext
-+-------------------+
-|    Browser        |
-|    (Client)       |
-+-------------------+
-        |
-        v
-+-------------------+
-|      Nginx        |
-|     (Server)      |
-+-------------------+
-        |
-        +-----------------------+
-        |                       |
-        v                       v
-+-------------------+  +-------------------+
-|  cloudchat_cache  |  |     Gunicorn      |
-+-------------------+  +-------------------+
-                                |
-                                v
-                       +-------------------+
-                       |    Flask App      |
-                       +-------------------+
 ```
 
 ---
@@ -279,7 +252,7 @@ pre-commit run --all-files
 ## 📬 联系方式
 
 * 联系人：张人大（Renda Zhang）
-* 邮箱：[952402967@qq.com](mailto:952402967@qq.com)
-* 个人网站：🌐 [https://rendazhang.com](https://rendazhang.com)
+* 📧 邮箱：[952402967@qq.com](mailto:952402967@qq.com)
+* 🌐 个人网站：[https://rendazhang.com](https://rendazhang.com)
 
 > ⏰ **Maintainer**：@Renda — 如果本项目对你有帮助，请不要忘了点亮 ⭐️ Star 支持我们！

@@ -47,7 +47,7 @@
 
 # 迁移指南
 
-* **Last Updated:** July 14, 2025, 16:00 (UTC+8)
+* **Last Updated:** July 14, 2025, 18:30 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -169,19 +169,19 @@ PORT     STATE SERVICE
 
 目录位置: `/var/www/rendazhang`
 
-相关项目: [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
+前端项目代码链接: 📁 [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
 
 #### 后端代码
 
 目录位置: `/opt/cloudchat`
 
-相关项目: [Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
+后端项目代码链接: 📁 [Python Cloud Chat](https://github.com/RendaZhang/python-cloud-chat)
 
 #### Nginx 配置
 
 目录位置: `/etc/nginx`
 
-相关项目: [Nginx Conf](https://github.com/RendaZhang/nginx-conf)
+Nginx 配置链接: 📁 [Nginx Conf](https://github.com/RendaZhang/nginx-conf)
 
 ### 迁移验证清单
 

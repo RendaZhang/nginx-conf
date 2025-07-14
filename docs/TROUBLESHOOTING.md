@@ -17,14 +17,14 @@
 
 # NGINX Troubleshooting Guide
 
-* **Last Updated:** July 13, 2025, 20:00 (UTC+8)
+* **Last Updated:** July 14, 2025, 18:40 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
 
 ## 简介
 
-本指南系统记录了  **轻量级** 网站（www.rendazhang.com）技术栈中遇到的 NGINX 相关疑难问题及其解决方案。作为生产环境运维的重要知识库，它详细描述了各类问题的：
+本指南系统记录了  **轻量级** 网站（🌐 [www.rendazhang.com](https://www.rendazhang.com)）技术栈中遇到的 NGINX 相关疑难问题及其解决方案。作为生产环境运维的重要知识库，它详细描述了各类问题的：
 
 1. **故障现象** - 用户端表现与服务器日志特征
 2. **排查过程** - 诊断思路与关键检查点
@@ -35,9 +35,13 @@
 ### 涵盖问题类型
 
 ✅ HTTP/2 协议兼容性问题
+
 ✅ 代理缓存配置与调优
+
 ✅ 正则表达式位置块陷阱
+
 ✅ 动态模块兼容性故障
+
 ✅ 安全头策略优化
 
 ### 核心价值
@@ -296,6 +300,6 @@ sudo systemctl restart nginx
 
 **参考资料**
 
-- [Nginx 动态模块编译指南](https://nginx.org/en/docs/beginners_guide.html#dynamic)
-- [ngx_cache_purge 模块文档](https://github.com/nginx-modules/ngx_cache_purge)
-- [Linux 信号 11 (SIGSEGV) 说明](https://man7.org/linux/man-pages/man7/signal.7.html)
+- 🌐 [Nginx 动态模块编译指南](https://nginx.org/en/docs/beginners_guide.html#dynamic)
+- 🌐 [ngx_cache_purge 模块文档](https://github.com/nginx-modules/ngx_cache_purge)
+- 🌐 [Linux 信号 11 (SIGSEGV) 说明](https://man7.org/linux/man-pages/man7/signal.7.html)
