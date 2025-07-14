@@ -1,7 +1,7 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [🚚 迁移指南](#-%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
+- [迁移指南](#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
   - [简介](#%E7%AE%80%E4%BB%8B)
     - [关键迁移变化](#%E5%85%B3%E9%94%AE%E8%BF%81%E7%A7%BB%E5%8F%98%E5%8C%96)
     - [示例目标服务器](#%E7%A4%BA%E4%BE%8B%E7%9B%AE%E6%A0%87%E6%9C%8D%E5%8A%A1%E5%99%A8)
@@ -45,7 +45,7 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# 🚚 迁移指南
+# 迁移指南
 
 * **Last Updated:** July 14, 2025, 16:00 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
@@ -853,9 +853,6 @@ sudo systemctl restart nginx
 * 备选方案：如果上述方法失败，可以尝试完整源码编译。
 
 #### 目录与用户约定
-
-* CentOS 7 : 主目录 (/usr/local/nginx) + 静态站点 (/usr/local/nginx/RendaZhang) + 缓存 (/var/cache/nginx) + 运行用户 (nginx)
-* Ubuntu 24 : 主目录 (/usr/sbin/nginx) + 配置 (/etc/nginx) + 静态站点 (/var/www/rendazhang) + 缓存 (相同) + 运行用户 (www-data)
 
 配置 `user www-data` 后，需要确保 `/var/log/nginx`、`/var/www/rendazhang`、/`var/cache/nginx` 和 `/run/nginx.pid` 对 `www-data` 用户有足够的权限。
 
