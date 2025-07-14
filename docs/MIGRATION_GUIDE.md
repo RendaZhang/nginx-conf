@@ -35,11 +35,11 @@
     - [Nginx 迁移](#nginx-%E8%BF%81%E7%A7%BB)
       - [安装和配置 Nginx](#%E5%AE%89%E8%A3%85%E5%92%8C%E9%85%8D%E7%BD%AE-nginx)
       - [目录与用户约定](#%E7%9B%AE%E5%BD%95%E4%B8%8E%E7%94%A8%E6%88%B7%E7%BA%A6%E5%AE%9A)
-      - [SSL 证书](#ssl-%E8%AF%81%E4%B9%A6)
+      - [SSL 证书证书自动化](#ssl-%E8%AF%81%E4%B9%A6%E8%AF%81%E4%B9%A6%E8%87%AA%E5%8A%A8%E5%8C%96)
       - [配置 OOM Killer 优先级](#%E9%85%8D%E7%BD%AE-oom-killer-%E4%BC%98%E5%85%88%E7%BA%A7-1)
   - [迁移完成后检查](#%E8%BF%81%E7%A7%BB%E5%AE%8C%E6%88%90%E5%90%8E%E6%A3%80%E6%9F%A5)
     - [检查 Nginx](#%E6%A3%80%E6%9F%A5-nginx)
-      - [Nginx 缓存](#nginx-%E7%BC%93%E5%AD%98)
+      - [缓存管理](#%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86)
     - [检查后端](#%E6%A3%80%E6%9F%A5%E5%90%8E%E7%AB%AF)
     - [检查前端](#%E6%A3%80%E6%9F%A5%E5%89%8D%E7%AB%AF)
 
@@ -47,7 +47,7 @@
 
 # 🚚 迁移指南
 
-* **Last Updated:** July 13, 2025, 20:30 (UTC+8)
+* **Last Updated:** July 14, 2025, 16:00 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -893,7 +893,7 @@ sudo mkdir -p /var/cache/nginx
 sudo chown -R www-data:www-data /var/cache/nginx
 ```
 
-#### SSL 证书
+#### SSL 证书证书自动化
 
 Certbot 会自动改写 rendazhang.conf 中的 ssl_certificate 等行，且在 /etc/cron.d 添加续期任务。
 
@@ -931,6 +931,10 @@ sudo systemctl list-timers
 # 如果定时任务未启用，可以手动启用：
 sudo systemctl enable certbot.timer
 sudo systemctl start certbot.timer
+
+# 通过 `certbot.timer` 服务，系统会定期尝试续签证书。
+# 可使用以下命令检查状态：
+sudo systemctl status certbot.timer
 
 # 重新加载 Nginx 配置：
 sudo systemctl reload nginx
@@ -988,7 +992,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart nginx
 ```
 
-#### Nginx 缓存
+#### 缓存管理
 
 检查 Nginx 缓存是否生效：
 
@@ -1011,22 +1015,6 @@ rm -rf /var/cache/nginx/*
 
 # 如果需要远程调用，可在 `location ~ /cloudchat/purge-cache/(.*)` 中增加 `allow <你的IP>;` 或配置 Basic Auth，再重新加载 Nginx。
 ```
-
-缓存规则说明：
-
-* 缓存键由 `proxy_cache_key "$host$request_uri"` （位于 `nginx.conf`）拼接而成：
-  * `$host`：主机名
-  * `$request_uri`：路径
-
-* 缓存键示例：`wwww.rendazhang.com/cloudchat/test`。
-
-* 动态缓存目录：`/var/cache/nginx`，`proxy_cache_path` 设置 `inactive=60m`、`max_size=100m`，匹配 `/cloudchat/` 接口并通过 `proxy_cache_valid 200 302 10m` 和 `404 1m` 控制缓存时间。
-
-* 静态缓存目录：`/tmp/nginx`（备用），当前配置主要使用 `expires 30d` 控制本地静态资源缓存。
-
-* 缓存文件在指定 `inactive` 时间内未被访问会自动清理，目录超过 `max_size` 时也会淘汰旧文件。
-
-* 动态缓存：配置在 `/var/cache/nginx`，`proxy_cache_valid 200 302 10m`，`404` 缓存 1 分钟；若 60 分钟未再次访问会被自动清理。
 
 ### 检查后端
 
