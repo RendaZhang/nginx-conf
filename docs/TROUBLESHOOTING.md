@@ -287,7 +287,7 @@ sudo systemctl restart nginx
    ```
 3. 确认缓存状态变为 MISS：
    ```bash
-   curl -I https://www.rendazhang.com/cloudchat/test -H "Referer: https://www.rendazhang.com"
+   curl -I https://www.rendazhang.com/cloudchat/test
    X-Cache-Status: MISS
    ```
 

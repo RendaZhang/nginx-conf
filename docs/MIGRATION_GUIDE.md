@@ -741,7 +741,6 @@ journalctl -u cloudchat.service -f
 ```bash
 curl -X POST localhost:5000/chat \
       -H "Content-Type: application/json" \
-      -H "Referer: https://rendazhang.com" \
       -d '{"message": "This is a Test from localhost"}'
 
 # 预期输出（分段）：
@@ -996,7 +995,7 @@ sudo systemctl restart nginx
 ```bash
 # 检查 x-cache-status: 是 HIT 或 MISS
 # 根据配置的 `proxy_cache_min_uses x` 的值，会在第 x + 1 次看到 HIT。
-curl -I https://www.rendazhang.com/cloudchat/test -H "Referer: https://www.rendazhang.com"
+curl -I https://www.rendazhang.com/cloudchat/test
 
 # 如果出现 `curl: (52) Empty reply from server` 错误，可能是版本不兼容问题，Nginx 需要重新编译 nginx-module-cache-purge 模块
 
@@ -1020,7 +1019,6 @@ rm -rf /var/cache/nginx/*
 ```bash
 curl -X POST https://www.rendazhang.com/cloudchat/chat \
       -H "Content-Type: application/json" \
-      -H "Referer: https://www.rendazhang.com" \
       -d '{"message": "This is a Test from Remote Server"}'
 ```
 

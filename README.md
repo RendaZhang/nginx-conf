@@ -93,8 +93,6 @@
 - **网站根目录**: `/var/www/$StaticFrontendPagesFolder`
 - **HTTP → HTTPS 重定向**:
   - 所有 HTTP 请求 (端口 80) 自动重定向到 HTTPS (端口 443)
-- **请求头配置**：
-  - 仅当 `Referer` 头以 `https://$DomainName` 开头时才生效
 - **SSL 设置**:
   - 由 Certbot 自动管理
   - 证书: `/etc/letsencrypt/live/$DomainName/fullchain.pem`
