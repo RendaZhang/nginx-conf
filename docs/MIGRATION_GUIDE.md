@@ -157,7 +157,7 @@ PORT     STATE SERVICE
 │   │   └── modules-enabled/     # 动态模块加载
 │   └── redis/                   # Redis 配置
 ├── var
-│   ├── www/rendazhang/          # 前端静态资源
+│   ├── www/html/                # 前端静态资源
 │   └── cache/nginx/             # 代理缓存目录
 └── opt
     └── cloudchat/               # 后端应用
@@ -167,9 +167,9 @@ PORT     STATE SERVICE
 
 #### 前端代码
 
-目录位置: `/var/www/rendazhang`
+目录位置: `/var/www/html`
 
-前端项目代码链接: 📁 [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
+前端项目代码链接: 📁 [Renda Zhang WEB](https://github.com/RendaZhang/rendazhang)
 
 #### 后端代码
 
@@ -560,13 +560,13 @@ cgexec -g memory:limited_group your_command
 
 ### 前端迁移
 
-初始化静态站点 /var/www/rendazhang
+初始化静态站点 /var/www/html
 
 ```bash
 sudo mkdir -p /var/www
 cd /var/www/
 git clone git@gitee.com:RendaZhang/RendaZhang.git
-mv RendaZhang/ rendazhang/
+mv RendaZhang/ html/
 ```
 
 ### 后端迁移
@@ -853,12 +853,12 @@ sudo systemctl restart nginx
 
 #### 目录与用户约定
 
-配置 `user www-data` 后，需要确保 `/var/log/nginx`、`/var/www/rendazhang`、/`var/cache/nginx` 和 `/run/nginx.pid` 对 `www-data` 用户有足够的权限。
+配置 `user www-data` 后，需要确保 `/var/log/nginx`、`/var/www/html`、`/var/cache/nginx` 和 `/run/nginx.pid` 对 `www-data` 用户有足够的权限。
 
 使用以下命令检查 Nginx 的关键目录的权限：
 
 ```bash
-ls -ld /var/log/nginx /var/www/rendazhang /var/cache/nginx
+ls -ld /var/log/nginx /var/www/html /var/cache/nginx
 ```
 
 检查日志文件目录：
@@ -875,8 +875,8 @@ sudo chmod -R 755 /var/log/nginx
 ```bash
 # Nginx 需要读取网站文件。
 # 确保 www-data 用户有读权限，如果没有，请执行如下操作：
-sudo chown -R www-data:www-data /var/www/rendazhang
-sudo chmod -R 755 /var/www/rendazhang
+sudo chown -R www-data:www-data /var/www/html
+sudo chmod -R 755 /var/www/html
 ```
 
 检查缓存目录：

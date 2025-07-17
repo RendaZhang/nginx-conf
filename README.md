@@ -26,7 +26,7 @@
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 14, 2025, 18:30 (UTC+8)
+* **Last Updated:** July 18, 2025, 04:00 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -52,7 +52,7 @@
   - 1 GB RAM
   - 40 GB SSD
 - **Web 服务器**: Nginx + Gunicorn(Gevent)
-- **参考架构**：Web (Frontend (HTML + CSS + Bootstrap + JavaScript)) → Server (Ubuntu → Nginx → systemd → Gunicorn + Gevent → Backend (Flask APP))
+- **参考架构**：Web (Frontend (Astro + React + Bootstrap)) → Server (Ubuntu → Nginx → systemd → Gunicorn + Gevent → Backend (Flask APP))
 
 ### **后端服务**
 
@@ -61,8 +61,8 @@
 
 ### **前端代码**
 
-- 原生 HTML, CSS, Bootstrap, JavaScript
-- 具体代码和网站页面功能描述请参考前端项目：📁 [Renda Zhang Web](https://github.com/RendaZhang/rendazhang.github.io)
+- Astro + React 架构
+- 具体代码和网站页面功能描述请参考前端项目：📁 [Renda Zhang WEB](https://github.com/RendaZhang/rendazhang)
 
 ---
 
@@ -90,7 +90,7 @@
 
 关键配置功能的文件：`nginx.conf`，`sites-available/rendazhang.conf`。
 
-- **网站根目录**: `/var/www/$StaticFrontendPagesFolder`
+- **网站根目录**: `/var/www/html`
 - **HTTP → HTTPS 重定向**:
   - 所有 HTTP 请求 (端口 80) 自动重定向到 HTTPS (端口 443)
 - **SSL 设置**:
@@ -161,7 +161,7 @@ graph TD
 
 - **主目录**：`/usr/sbin/nginx`
 - **配置**：`/etc/nginx`
-- **静态站点**：`/var/www/rendazhang`
+- **静态站点**：`/var/www/html`
 - **缓存**：`/var/cache/nginx`（与 CentOS 7 相同）
 - **运行用户**：`www-data`
 
@@ -218,7 +218,7 @@ graph TD
 - 迁移指南：📄 [Migration Guide](docs/MIGRATION_GUIDE.md)
 - 针对小内存服务器的优化和增强建议：📄 [Small Server Optimizations Guide](docs/SMALL_SERVER_OPTIMIZATIONS.md)
 - 网站: 🌐 [www.rendazhang.com](https://www.rendazhang.com)
-- 前端仓库：📁 [Renda Zhang Web Project](https://github.com/RendaZhang/rendazhang.github.io)
+- 前端仓库：📁 [Renda Zhang WEB Project](https://github.com/RendaZhang/rendazhang)
 - 后端仓库：📁 [Python Cloud Chat Project](https://github.com/RendaZhang/python-cloud-chat)
 - 重量级解决方案：📁 [renda-cloud-lab Project](https://github.com/RendaZhang/renda-cloud-lab)
 

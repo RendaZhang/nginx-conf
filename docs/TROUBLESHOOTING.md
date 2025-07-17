@@ -3,23 +3,23 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [NGINX Troubleshooting Guide](#nginx-troubleshooting-guide)
-  - [简介](#简介)
-    - [涵盖问题类型](#涵盖问题类型)
-    - [核心价值](#核心价值)
-    - [使用建议](#使用建议)
-    - [BUG 记录格式要求](#bug-记录格式要求)
-    - [问题状态](#问题状态)
-  - [\[2025-07-07\] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` \& `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
-  - [\[2025-07-09\] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-缓存文件未生成与-uninitialized-variable-警告)
-  - [\[2025-07-09\] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-正则-location-中-proxy_pass-带-uri-导致启动失败)
-  - [\[2025-07-10\] `proxy_cache_purge` 始终 404](#2025-07-10-proxy_cache_purge-始终-404)
-  - [\[2025-07-13\] `proxy_cache_purge` 返回 "Empty reply" 错误](#2025-07-13-proxy_cache_purge-返回-empty-reply-错误)
+  - [简介](#%E7%AE%80%E4%BB%8B)
+    - [涵盖问题类型](#%E6%B6%B5%E7%9B%96%E9%97%AE%E9%A2%98%E7%B1%BB%E5%9E%8B)
+    - [核心价值](#%E6%A0%B8%E5%BF%83%E4%BB%B7%E5%80%BC)
+    - [使用建议](#%E4%BD%BF%E7%94%A8%E5%BB%BA%E8%AE%AE)
+    - [BUG 记录格式要求](#bug-%E8%AE%B0%E5%BD%95%E6%A0%BC%E5%BC%8F%E8%A6%81%E6%B1%82)
+    - [问题状态](#%E9%97%AE%E9%A2%98%E7%8A%B6%E6%80%81)
+  - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
+  - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
+  - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
+  - [[2025-07-10] `proxy_cache_purge` 始终 404](#2025-07-10-proxy_cache_purge-%E5%A7%8B%E7%BB%88-404)
+  - [[2025-07-13] `proxy_cache_purge` 返回 "Empty reply" 错误](#2025-07-13-proxy_cache_purge-%E8%BF%94%E5%9B%9E-empty-reply-%E9%94%99%E8%AF%AF)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # NGINX Troubleshooting Guide
 
-* **Last Updated:** July 18, 2025, 01:00 (UTC+8)
+* **Last Updated:** July 18, 2025, 03:00 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
