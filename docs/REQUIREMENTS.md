@@ -43,6 +43,7 @@
 
 - [x] 配置动态模块 `ngx_cache_purge` 并通过自动化脚本保证版本兼容
 - [x] 支持在 Ubuntu 24.04 系统下运行，兼容 CentOS 7 迁移流程
+- [x] 通过 pre-commit 自动执行 `doctoc` 更新文档目录
 - [ ] 集成压力测试场景（如 `siege -c 50`）到 CI 流程
 - [ ] 文档内提供 Docker 化部署示例
 

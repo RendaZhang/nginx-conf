@@ -6,3 +6,10 @@ repos:
     - id: trailing-whitespace
     - id: check-added-large-files
     - id: check-yaml
+- repo: local
+  hooks:
+    - id: update-doctoc
+      name: Run doctoc on docs
+      entry: scripts/run_doctoc.sh
+      language: script
+      pass_filenames: false

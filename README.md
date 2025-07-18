@@ -22,7 +22,7 @@
     - [项目需求](#%E9%A1%B9%E7%9B%AE%E9%9C%80%E6%B1%82)
     - [迁移指南](#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
     - [小内存服务器指南](#%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8C%87%E5%8D%97)
-  - [🤝 Contributing Guide](#-contributing-guide)
+  - [🤝 贡献指南](#-%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97)
   - [🔐 License](#-license)
   - [📬 联系方式](#-%E8%81%94%E7%B3%BB%E6%96%B9%E5%BC%8F)
 
@@ -226,20 +226,26 @@ graph TD
 
 ---
 
-## 🤝 Contributing Guide
+## 🤝 贡献指南
 
 - Fork & clone this repo.
-- Install dependencies and **pre-commit**:
-```bash
-pip install pre-commit
-pre-commit install
-```
-- Before every commit, hooks will run automatically. You can trigger them manually with:
-```bash
-pre-commit run --all-files
-```
+- 进入虚拟环境：
+   ```bash
+   # 如果还没安装虚拟环境，执行命令：python -m venv venv
+   source venv/bin/activate
+   ```
+- 安装依赖并启用 **pre-commit**:
+   ```bash
+   pip install pre-commit
+   pre-commit install
+   ```
+- 在每次提交前，钩子会自动运行，并执行 `doctoc` (if available) 更新 README 和 docs 目录下的文件。
+- 你也可以手动触发：
+  ```bash
+  pre-commit run --all-files
+  ```
 
-> ✅ All commits must pass pre-commit checks; CI will block non-conforming PRs.
+> ✅ 所有提交必须通过 pre-commit 检查；CI 会阻止不符合规范的 PR。
 
 ---
 
