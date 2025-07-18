@@ -190,4 +190,4 @@ glances
 - 限制对话历史长度
 - 定期清理旧会话
 
-具体可以参考 Python 后端项目的文档：📄 [轻量级会话存储方案（针对小内存服务器）](https://github.com/RendaZhang/python-cloud-chat/blob/master/docs/lightweight_backend_development.md#%E8%BD%BB%E9%87%8F%E7%BA%A7%E4%BC%9A%E8%AF%9D%E5%AD%98%E5%82%A8%E6%96%B9%E6%A1%88%E9%92%88%E5%AF%B9%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8)
+具体可以参考 Python 后端项目的文档：📄 [轻量级会话存储方案（针对小内存服务器）](https://github.com/RendaZhang/python-cloud-chat/blob/master/docs/LIGHTWEIGHT_BACKEND_DEVELOPMENT.md#%E8%BD%BB%E9%87%8F%E7%BA%A7%E4%BC%9A%E8%AF%9D%E5%AD%98%E5%82%A8%E6%96%B9%E6%A1%88%E9%92%88%E5%AF%B9%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8)

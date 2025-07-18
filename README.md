@@ -41,7 +41,7 @@
 
 这些配置文件针对生产环境优化，支持 HTTPS、反向代理和安全防护措施，并具备较强的通用性，可在多种操作系统上使用。
 
-当前示例以 **Ubuntu 24.04 LTS** 为主，关于旧版 CentOS 7 的迁移细节请参阅 📄 [迁移指南](docs/MIGRATION_GUIDE.md)。
+当前示例以 **Ubuntu 24.04 LTS** 为主，关于旧版 CentOS 7 的迁移细节请参阅 📄 [迁移指南](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)。
 
 > 重量级解决方案可参考我的云原生项目：📁 [Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
@@ -218,11 +218,11 @@ graph TD
 
 ### 迁移指南
 
-📄 [Migration Guide](docs/MIGRATION_GUIDE.md)
+📄 [Migration Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
 
 ### 小内存服务器指南
 
-📄 [Small Server Optimizations Guide](docs/SMALL_SERVER_OPTIMIZATIONS.md)
+📄 [Small Server Optimizations Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SMALL_SERVER_OPTIMIZATIONS.md#%E9%92%88%E5%AF%B9%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E4%BC%98%E5%8C%96%E5%92%8C%E5%A2%9E%E5%BC%BA%E5%BB%BA%E8%AE%AE)
 
 ---
 
