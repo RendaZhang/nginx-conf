@@ -5,19 +5,23 @@
 - [Nginx Configuration for rendazhang.com](#nginx-configuration-for-rendazhangcom)
   - [简介](#%E7%AE%80%E4%BB%8B)
   - [服务器环境信息](#%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%8E%AF%E5%A2%83%E4%BF%A1%E6%81%AF)
+    - [架构示意图](#%E6%9E%B6%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE)
     - [**后端服务**](#%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1)
     - [**前端代码**](#%E5%89%8D%E7%AB%AF%E4%BB%A3%E7%A0%81)
-  - [配置文件说明](#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E)
-  - [关键配置功能](#%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD)
-  - [配置架构示意图](#%E9%85%8D%E7%BD%AE%E6%9E%B6%E6%9E%84%E7%A4%BA%E6%84%8F%E5%9B%BE)
-  - [Nginx 配置](#nginx-%E9%85%8D%E7%BD%AE)
-  - [目录与用户约定](#%E7%9B%AE%E5%BD%95%E4%B8%8E%E7%94%A8%E6%88%B7%E7%BA%A6%E5%AE%9A)
-  - [缓存管理](#%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86)
-  - [OOM Killer 优先级](#oom-killer-%E4%BC%98%E5%85%88%E7%BA%A7)
-  - [证书自动化](#%E8%AF%81%E4%B9%A6%E8%87%AA%E5%8A%A8%E5%8C%96)
-  - [故障排查](#%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5)
-  - [版本兼容表](#%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E8%A1%A8)
+  - [Nginx 配置说明](#nginx-%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)
+    - [关键配置功能](#%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD)
+  - [Nginx 服务器配置](#nginx-%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE)
+    - [版本兼容表](#%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E8%A1%A8)
+    - [Nginx 配置](#nginx-%E9%85%8D%E7%BD%AE)
+    - [目录与用户约定](#%E7%9B%AE%E5%BD%95%E4%B8%8E%E7%94%A8%E6%88%B7%E7%BA%A6%E5%AE%9A)
+    - [缓存管理](#%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86)
+    - [OOM Killer 优先级](#oom-killer-%E4%BC%98%E5%85%88%E7%BA%A7)
+    - [证书自动化](#%E8%AF%81%E4%B9%A6%E8%87%AA%E5%8A%A8%E5%8C%96)
+    - [故障排查](#%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5)
   - [相关资源](#%E7%9B%B8%E5%85%B3%E8%B5%84%E6%BA%90)
+    - [项目需求](#%E9%A1%B9%E7%9B%AE%E9%9C%80%E6%B1%82)
+    - [迁移指南](#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
+    - [小内存服务器指南](#%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8C%87%E5%8D%97)
   - [🤝 Contributing Guide](#-contributing-guide)
   - [🔐 License](#-license)
   - [📬 联系方式](#-%E8%81%94%E7%B3%BB%E6%96%B9%E5%BC%8F)
@@ -54,6 +58,23 @@
 - **Web 服务器**: Nginx + Gunicorn(Gevent)
 - **参考架构**：Web (Frontend (Astro + React + Bootstrap)) → Server (Ubuntu → Nginx → systemd → Gunicorn + Gevent → Backend (Flask APP))
 
+### 架构示意图
+
+Mermaid Flow 图示：
+
+```mermaid
+graph TD
+  client[Browser]
+  cache[(cloudchat_cache)]
+  server[Nginx]
+  gunicorn[Gunicorn]
+  flask[Flask App]
+  client -->|HTTPS| server
+  server -->|Proxy| gunicorn
+  gunicorn --> flask
+  server --> cache
+```
+
 ### **后端服务**
 
 - Python Flask 部署在 Gunicorn + Gevent 上
@@ -66,7 +87,7 @@
 
 ---
 
-## 配置文件说明
+## Nginx 配置说明
 
 | 文件 | 作用 |
 |------|------|
@@ -84,9 +105,7 @@
 
 > ⚠ **注意**: 证书目录 (`cert/`, `ssl/`) 和备份文件 (`backup/`) 等敏感 / 临时内容已通过 `.gitignore` 排除
 
----
-
-## 关键配置功能
+### 关键配置功能
 
 关键配置功能的文件：`nginx.conf`，`sites-available/rendazhang.conf`。
 
@@ -123,32 +142,22 @@
 
 ---
 
-## 配置架构示意图
+## Nginx 服务器配置
 
-Mermaid Flow 图示：
+### 版本兼容表
 
-```mermaid
-graph TD
-  client[Browser]
-  cache[(cloudchat_cache)]
-  server[Nginx]
-  gunicorn[Gunicorn]
-  flask[Flask App]
-  client -->|HTTPS| server
-  server -->|Proxy| gunicorn
-  gunicorn --> flask
-  server --> cache
-```
+| 组件 | 最低版本 | 当前测试版本 |
+|------|---------|--------------|
+| Nginx | 1.24 | 1.24.0 |
+| Certbot | 2.10 | 2.10.0 |
+| Gunicorn | 23 | 23.0.0 |
+| Python | 3.12 | 3.12.3 |
 
----
-
-## Nginx 配置
+### Nginx 配置
 
 具体步骤可以参考文档内容：📄 [安装和配置 Nginx](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E5%AE%89%E8%A3%85%E5%92%8C%E9%85%8D%E7%BD%AE-nginx)
 
----
-
-## 目录与用户约定
+### 目录与用户约定
 
 **CentOS 7**
 
@@ -169,31 +178,23 @@ graph TD
 
 有关 Nginx 配置的目录结构和用户约定的详细操作步骤，请参考文档内容：📄 [目录与用户约定](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E7%9B%AE%E5%BD%95%E4%B8%8E%E7%94%A8%E6%88%B7%E7%BA%A6%E5%AE%9A)
 
----
-
-## 缓存管理
+### 缓存管理
 
 具体步骤可以参考文档内容：📄 [Nginx 缓存管理](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86)
 
----
-
-## OOM Killer 优先级
+### OOM Killer 优先级
 
 具体建议可以参考文档内容：📄 [systemd 资源策略](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SMALL_SERVER_OPTIMIZATIONS.md#systemd-%E8%B5%84%E6%BA%90%E7%AD%96%E7%95%A5)
 
 具体操作步骤可以参考文档内容：📄 [配置 OOM Killer 优先级](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E9%85%8D%E7%BD%AE-oom-killer-%E4%BC%98%E5%85%88%E7%BA%A7)
 
----
-
-## 证书自动化
+### 证书自动化
 
 证书由 Certbot 定时续期，通常无需人工干预。
 
 具体步骤可以参考文档内容：📄 [证书自动化](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#ssl-%E8%AF%81%E4%B9%A6%E8%AF%81%E4%B9%A6%E8%87%AA%E5%8A%A8%E5%8C%96)
 
----
-
-## 故障排查
+### 故障排查
 
 > **重要提示**: 每次修改配置后，请运行 `nginx -t` 验证配置有效性后再重启服务
 
@@ -201,26 +202,27 @@ graph TD
 
 ---
 
-## 版本兼容表
-
-| 组件 | 最低版本 | 当前测试版本 |
-|------|---------|--------------|
-| Nginx | 1.24 | 1.24.0 |
-| Certbot | 2.10 | 2.10.0 |
-| Gunicorn | 23 | 23.0.0 |
-| Python | 3.12 | 3.12.3 |
-
----
-
 ## 相关资源
 
-- 迁移指南：📄 [Migration Guide](docs/MIGRATION_GUIDE.md)
-- 小内存服务器指南：📄 [Small Server Optimizations Guide](docs/SMALL_SERVER_OPTIMIZATIONS.md)
-- 本项目需求：📄 [项目需求清单](https://github.com/RendaZhang/nginx-conf/blob/master/docs/REQUIREMENTS.md#%E9%A1%B9%E7%9B%AE%E9%9C%80%E6%B1%82%E6%B8%85%E5%8D%95)
-- 网站: 🌐 [www.rendazhang.com](https://www.rendazhang.com)
-- 前端仓库：📁 [Renda Zhang WEB Project](https://github.com/RendaZhang/rendazhang)
-- 后端仓库：📁 [Python Cloud Chat Project](https://github.com/RendaZhang/python-cloud-chat)
-- 重量级解决方案：📁 [renda-cloud-lab Project](https://github.com/RendaZhang/renda-cloud-lab)
+网站链接：🌐 [www.rendazhang.com](https://www.rendazhang.com)
+
+前端仓库：📁 [Renda Zhang WEB Project](https://github.com/RendaZhang/rendazhang)
+
+后端仓库：📁 [Python Cloud Chat Project](https://github.com/RendaZhang/python-cloud-chat)
+
+云原生项目：📁 [renda-cloud-lab Project](https://github.com/RendaZhang/renda-cloud-lab)
+
+### 项目需求
+
+📄 [项目的需求清单](https://github.com/RendaZhang/nginx-conf/blob/master/docs/REQUIREMENTS.md#%E9%A1%B9%E7%9B%AE%E9%9C%80%E6%B1%82%E6%B8%85%E5%8D%95)
+
+### 迁移指南
+
+📄 [Migration Guide](docs/MIGRATION_GUIDE.md)
+
+### 小内存服务器指南
+
+📄 [Small Server Optimizations Guide](docs/SMALL_SERVER_OPTIMIZATIONS.md)
 
 ---
 
@@ -243,7 +245,7 @@ pre-commit run --all-files
 
 ## 🔐 License
 
-本项目采用 **MIT 协议** 开源发布。这意味着你可以自由地使用、修改并重新发布本仓库的内容，只需在分发时附上原始许可证声明。
+本项目以 **MIT License** 发布，你可以自由使用与修改。请在分发时保留原始许可证声明。
 
 ---
 
@@ -251,6 +253,5 @@ pre-commit run --all-files
 
 * 联系人：张人大（Renda Zhang）
 * 📧 邮箱：[952402967@qq.com](mailto:952402967@qq.com)
-* 🌐 个人网站：[https://rendazhang.com](https://rendazhang.com)
 
 > ⏰ **Maintainer**：@Renda — 如果本项目对你有帮助，请不要忘了点亮 ⭐️ Star 支持我们！
