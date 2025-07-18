@@ -185,7 +185,6 @@ graph TD
 
 ---
 
-
 ## 证书自动化
 
 证书由 Certbot 定时续期，通常无需人工干预。
@@ -216,7 +215,8 @@ graph TD
 ## 相关资源
 
 - 迁移指南：📄 [Migration Guide](docs/MIGRATION_GUIDE.md)
-- 针对小内存服务器的优化和增强建议：📄 [Small Server Optimizations Guide](docs/SMALL_SERVER_OPTIMIZATIONS.md)
+- 小内存服务器指南：📄 [Small Server Optimizations Guide](docs/SMALL_SERVER_OPTIMIZATIONS.md)
+- 本项目需求：📄 [项目需求清单](https://github.com/RendaZhang/nginx-conf/blob/master/docs/REQUIREMENTS.md#%E9%A1%B9%E7%9B%AE%E9%9C%80%E6%B1%82%E6%B8%85%E5%8D%95)
 - 网站: 🌐 [www.rendazhang.com](https://www.rendazhang.com)
 - 前端仓库：📁 [Renda Zhang WEB Project](https://github.com/RendaZhang/rendazhang)
 - 后端仓库：📁 [Python Cloud Chat Project](https://github.com/RendaZhang/python-cloud-chat)
