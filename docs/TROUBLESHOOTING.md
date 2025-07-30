@@ -14,6 +14,7 @@
   - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
   - [[2025-07-10] `proxy_cache_purge` 始终 404](#2025-07-10-proxy_cache_purge-%E5%A7%8B%E7%BB%88-404)
   - [[2025-07-13] `proxy_cache_purge` 返回 "Empty reply" 错误](#2025-07-13-proxy_cache_purge-%E8%BF%94%E5%9B%9E-empty-reply-%E9%94%99%E8%AF%AF)
+  - [[2025-07-31] pre-commit 自动添加换行导致 Nginx 模块软链接损坏](#2025-07-31-pre-commit-%E8%87%AA%E5%8A%A8%E6%B7%BB%E5%8A%A0%E6%8D%A2%E8%A1%8C%E5%AF%BC%E8%87%B4-nginx-%E6%A8%A1%E5%9D%97%E8%BD%AF%E9%93%BE%E6%8E%A5%E6%8D%9F%E5%9D%8F)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -81,6 +82,7 @@
 - [x] [2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败
 - [x] [2025-07-10] `proxy_cache_purge` 始终 404
 - [x] [2025-07-13] `proxy_cache_purge` 返回 "Empty reply" 错误
+- [x] [2025-07-31] pre-commit 添加换行导致 Nginx 模块软链接损坏
 
 ---
 
@@ -325,3 +327,40 @@ sudo systemctl restart nginx
 - 🌐 [Nginx 动态模块编译指南](https://nginx.org/en/docs/beginners_guide.html#dynamic)
 - 🌐 [ngx_cache_purge 模块文档](https://github.com/nginx-modules/ngx_cache_purge)
 - 🌐 [Linux 信号 11 (SIGSEGV) 说明](https://man7.org/linux/man-pages/man7/signal.7.html)
+
+---
+
+## [2025-07-31] pre-commit 自动添加换行导致 Nginx 模块软链接损坏
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04 LTS
+- 相关模块：`ngx_http_cache_purge_module` 等动态模块
+
+**症状 (Symptoms)**
+
+- `nginx -t` 报错：`open() "/etc/nginx/modules-enabled/50-mod-http-cache-purge.conf" failed (2: No such file or directory)`
+- `ls -al` 显示软链接目标包含 `$'\n'`
+
+**排查过程 (Diagnosis)**
+
+1. 检查预提交钩子发现 `end-of-file-fixer` 对软链接生效
+2. `readlink` 结果末尾存在 `\n`
+3. 软链接路径无效导致模块加载失败
+
+**根因 (Root Cause)**
+
+- `end-of-file-fixer` 在软链接文件中插入换行符
+
+**解决方案 (Fix)**
+
+1. 重新创建正确的软链接
+2. `.pre-commit-config.yaml` 排除 `modules-enabled` 与 `sites-enabled` 目录
+3. `.gitattributes` 将 `modules-enabled/*` 与 `sites-enabled/*` 标记为 `-text`
+
+**经验总结**
+
+- 排除自动格式化钩子对软链接的影响
+- 更新 pre-commit 后应检查特殊文件是否被修改
+- 定期核查其他软链接目录，避免再次出现换行损坏

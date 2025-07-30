@@ -28,6 +28,10 @@
 *.dll  binary
 *.so   binary
 
+# Prevent line ending conversions for module symlinks
+modules-enabled/* -text
+sites-enabled/*  -text
+
 # Documentation
 /docs/** linguist-documentation
 

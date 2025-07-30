@@ -3,6 +3,7 @@ repos:
   rev: v5.0.0
   hooks:
     - id: end-of-file-fixer
+      exclude: '^(modules-enabled|sites-enabled)/'
     - id: trailing-whitespace
     - id: check-added-large-files
     - id: check-yaml
