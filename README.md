@@ -30,7 +30,7 @@
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 18, 2025, 04:00 (UTC+8)
+* **Last Updated:** July 31, 2025, 01:45 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -131,6 +131,7 @@ graph TD
     - `$request_uri`：路径
     - 缓存键示例：`wwww.rendazhang.com/cloudchat/test`
   - 静态缓存目录是 `/tmp/nginx`（备用），当前配置主要使用 `expires 30d` 控制本地静态资源缓存。
+  - 指纹文件位于 `/_astro/` 目录，缓存时长 365 天，利用哈希文件名实现长期缓存。
 - **限速与流量控制**：
   - 每个客户端限速配置：`limit_req_zone` 定义 `flask_limit`，5 r/s
 - **安全措施**:
