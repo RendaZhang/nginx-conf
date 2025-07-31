@@ -32,7 +32,7 @@
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 31, 2025, 01:45 (UTC+8)
+* **Last Updated:** July 31, 2025, 10:58 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -139,6 +139,8 @@ graph TD
 - **安全措施**:
   - `Strict-Transport-Security` 和 `Content-Security-Policy` 安全头在虚拟主机内强制启用
   - 阻止访问 `.git`, `.gitignore`, `package.json` 等敏感文件
+  - 启用 Fail2Ban 服务，根据日志自动封禁暴力破解与异常请求
+  - 维护 `ip-blacklist.conf`，结合 iptables/Nginx 规则屏蔽恶意 IP
 - **自定义错误页面**:
   - `404.html`
   - `50x.html`

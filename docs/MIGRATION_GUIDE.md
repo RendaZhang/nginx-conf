@@ -47,7 +47,7 @@
 
 # 迁移指南
 
-* **Last Updated:** July 14, 2025, 18:30 (UTC+8)
+* **Last Updated:** July 31, 2025, 10:58 (UTC+8)
 * **作者:** 张人大（Renda Zhang）
 
 ---
@@ -381,7 +381,12 @@ docker run -d --name node-exporter -p 9100:9100 prom/node-exporter
 # 可以根据实际情况，使用脚本定期检查新增进程：
 # 保存当前进程快照
 ps aux > /root/process_snapshot.txt
+# 启用 Fail2Ban 自动封禁恶意请求
+sudo apt install fail2ban
+sudo systemctl enable --now fail2ban
 ```
+
+- 定期维护 `ip-blacklist.conf` 并结合 iptables 阻断重复攻击源
 
 #### Ubuntu 24 设置交换空间
 
