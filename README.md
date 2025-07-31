@@ -22,6 +22,8 @@
     - [项目需求](#%E9%A1%B9%E7%9B%AE%E9%9C%80%E6%B1%82)
     - [迁移指南](#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
     - [小内存服务器指南](#%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8C%87%E5%8D%97)
+    - [故障排查指南](#%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E6%8C%87%E5%8D%97)
+    - [服务器安全报告](#%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%89%E5%85%A8%E6%8A%A5%E5%91%8A)
   - [🤝 贡献指南](#-%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97)
   - [🔐 License](#-license)
   - [📬 联系方式](#-%E8%81%94%E7%B3%BB%E6%96%B9%E5%BC%8F)
@@ -199,7 +201,7 @@ graph TD
 
 > **重要提示**: 每次修改配置后，请运行 `nginx -t` 验证配置有效性后再重启服务
 
-具体步骤可以参考文档内容：📄 [检查 Nginx](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E6%A3%80%E6%9F%A5-nginx)
+具体步骤可以参考文档内容：📄 [NGINX Troubleshooting Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/TROUBLESHOOTING.md#nginx-troubleshooting-guide)
 
 ---
 
@@ -224,6 +226,15 @@ graph TD
 ### 小内存服务器指南
 
 📄 [Small Server Optimizations Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SMALL_SERVER_OPTIMIZATIONS.md#%E9%92%88%E5%AF%B9%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%9A%84%E4%BC%98%E5%8C%96%E5%92%8C%E5%A2%9E%E5%BC%BA%E5%BB%BA%E8%AE%AE)
+
+### 故障排查指南
+
+📄 [NGINX Troubleshooting Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/TROUBLESHOOTING.md#nginx-troubleshooting-guide)
+
+### 服务器安全报告
+
+📄 [Server Security Report](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SERVER_SECURITY_REPORT.md#%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%89%E5%85%A8%E4%BA%8B%E4%BB%B6%E5%93%8D%E5%BA%94%E6%8A%A5%E5%91%8A%E6%81%B6%E6%84%8F%E6%94%BB%E5%87%BB%E5%88%86%E6%9E%90%E4%B8%8E%E5%8A%A0%E5%9B%BA%E6%8E%A5%E6%96%BD)
+该文档记录恶意攻击的分析过程，并给出 Nginx 的加固方案。
 
 ---
 
