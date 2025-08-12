@@ -13,6 +13,7 @@
     - [6.1 PostgreSQL（精简配置）](#61-postgresql%E7%B2%BE%E7%AE%80%E9%85%8D%E7%BD%AE)
     - [6.2 PgBouncer（连接池）](#62-pgbouncer%E8%BF%9E%E6%8E%A5%E6%B1%A0)
     - [6.3 验收与检查（本次）](#63-%E9%AA%8C%E6%94%B6%E4%B8%8E%E6%A3%80%E6%9F%A5%E6%9C%AC%E6%AC%A1)
+    - [6.4 直接建表（无历史迁移）— 已执行](#64-%E7%9B%B4%E6%8E%A5%E5%BB%BA%E8%A1%A8%E6%97%A0%E5%8E%86%E5%8F%B2%E8%BF%81%E7%A7%BB-%E5%B7%B2%E6%89%A7%E8%A1%8C)
   - [7. 记录：Nginx 站点与 API 路由](#7-%E8%AE%B0%E5%BD%95nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
   - [8. 日志与监控](#8-%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
   - [9. 安全基线](#9-%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
@@ -201,7 +202,7 @@
   DASHSCOPE_API_KEY=***
   FLASK_SECRET_KEY=***
   REDIS_PASSWORD=***
-  DATABASE_URL=postgresql+psycopg://cloudchat:***@127.0.0.1:6432/cloudchat
+  DATABASE_URL=postgresql+psycopg2://cloudchat:***@127.0.0.1:6432/cloudchat
   ```
 
   > 注：实际环境文件已写入真实密码；文档中以 `***` 遮蔽。
@@ -274,7 +275,7 @@
   MemoryMax=64M
   ```
 
-* auth_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth_query 从数据库读取凭据）
+* auth\_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth\_query 从数据库读取凭据）
 
 * **应用连接串**：`postgresql+psycopg://cloudchat:***@127.0.0.1:6432/cloudchat`
 
@@ -303,6 +304,25 @@
   select count(*) from pg_stat_activity;  -- 结果示例：6
   ```
 * 资源观察：`systemd-cgtop`、`journalctl -u *`、`free -h`、`vmstat 1`
+
+---
+
+### 6.4 直接建表（无历史迁移）— 已执行
+
+* **驱动与 DSN 对齐**：已将 `DATABASE_URL` 切换为 `postgresql+psycopg2://...` 并重启 `cloudchat`。
+* **Schema 文件**：`/opt/cloudchat/schema.sql`
+* **建表命令**：
+
+  ```bash
+  psql -h 127.0.0.1 -p 6432 -U cloudchat -d cloudchat -f /opt/cloudchat/schema.sql
+  ```
+* **结果**：已创建三张表 `users`、`credentials`、`sessions`。
+* **关键索引/约束**：
+
+  * `credentials`: `idx_credentials_user_type_one`（每用户本地凭据唯一）、`idx_credentials_oauth_unique`（第三方唯一）；`type` 检查约束；`user_id` 外键 `ON DELETE CASCADE`
+  * `users`: `uid/email/phone` 唯一；`idx_users_email_ci`（lower(email) 检索）
+  * `sessions`: `session_id` 唯一；`idx_sessions_user`、`idx_sessions_expires`
+* **冒烟插入**：已插入 `users(uid='smoke-0001', email='smoke@test.local')` 并成功查询到记录。
 
 ---
 
@@ -379,17 +399,19 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ## 12. 变更记录（Changelog）
 
-| 日期         | 变更内容                                                          | 服务           | 版本/提交 | 操作人 | 回滚方式                |
-| ---------- | ------------------------------------------------------------- | ------------ | ----- | --- | ------------------- |
-| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）              | redis-server |       |     | 还原 conf 与 MemoryMax |
-| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M          | cloudchat    |       |     | 还原 systemd 单元并重启    |
-| 2025-08-12 | 安装并配置 PostgreSQL（shared_buffers=96MB 等精简参数）                  | postgresql   | 16    |     | 停止服务/还原配置           |
-| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                       | postgresql   |       |     | 删除角色/库              |
-| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                  | pgbouncer    |       |     | 停止服务/回退应用连接串        |
-| 2025-08-12 | **写入 PgBouncer userlist（md5）并启用 admin_users；连通性与 pools 验证**  | pgbouncer    |       |     | 移除 userlist/还原配置    |
-| 2025-08-12 | **新增 `DATABASE_URL` 到 EnvironmentFile**                       | cloudchat    |       |     | 移除该行并重启             |
-| 2025-08-12 | **安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi** | cloudchat    |       |     | 卸载依赖或回滚 venv        |
-| 2025-08-12 | **创建 `db.py` 与 `models.py`（users/credentials/sessions）**      | cloudchat    |       |     | 删除文件/回滚提交           |
+| 日期         | 变更内容                                                      | 服务           | 版本/提交 | 操作人 | 回滚方式                |
+| ---------- | --------------------------------------------------------- | ------------ | ----- | --- | ------------------- |
+| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）          | redis-server |       |     | 还原 conf 与 MemoryMax |
+| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M      | cloudchat    |       |     | 还原 systemd 单元并重启    |
+| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）              | postgresql   | 16    |     | 停止服务/还原配置           |
+| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                   | postgresql   |       |     | 删除角色/库              |
+| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）              | pgbouncer    |       |     | 停止服务/回退应用连接串        |
+| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证  | pgbouncer    |       |     | 移除 userlist/还原配置    |
+| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）    | cloudchat    |       |     | 移除该行并重启             |
+| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi | cloudchat    |       |     | 卸载依赖或回滚 venv        |
+| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）      | cloudchat    |       |     | 删除文件/回滚提交           |
+| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                          | cloudchat    |       |     | 还原 DSN 并重启          |
+| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                       | postgresql   |       |     | 回滚：DROP TABLE ...   |
 
 ---
 
