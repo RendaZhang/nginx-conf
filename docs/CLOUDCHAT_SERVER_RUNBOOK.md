@@ -16,6 +16,7 @@
     - [6.4 直接建表（无历史迁移）— 已执行](#64-%E7%9B%B4%E6%8E%A5%E5%BB%BA%E8%A1%A8%E6%97%A0%E5%8E%86%E5%8F%B2%E8%BF%81%E7%A7%BB-%E5%B7%B2%E6%89%A7%E8%A1%8C)
     - [6.5 后端认证 Blueprint（已部署）](#65-%E5%90%8E%E7%AB%AF%E8%AE%A4%E8%AF%81-blueprint%E5%B7%B2%E9%83%A8%E7%BD%B2)
     - [6.6 密码找回与重置（已部署）](#66-%E5%AF%86%E7%A0%81%E6%89%BE%E5%9B%9E%E4%B8%8E%E9%87%8D%E7%BD%AE%E5%B7%B2%E9%83%A8%E7%BD%B2)
+    - [6.7 生产邮件发送（准备启用）](#67-%E7%94%9F%E4%BA%A7%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81%E5%87%86%E5%A4%87%E5%90%AF%E7%94%A8)
   - [7. 记录：Nginx 站点与 API 路由](#7-%E8%AE%B0%E5%BD%95nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
   - [8. 日志与监控](#8-%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
   - [9. 安全基线](#9-%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
@@ -383,6 +384,29 @@
 
 ---
 
+### 6.7 生产邮件发送（准备启用）
+
+* **发送方式**：后端通过 `mailer.py` 使用 SMTP（STARTTLS/587，或可改 SSL/465）。
+* **所需环境变量**（`/etc/cloudchat/cloudchat.env`）：
+
+  * `SMTP_HOST`、`SMTP_PORT`（默认 587）、`SMTP_USER`、`SMTP_PASS`、`SMTP_TLS=1`（STARTTLS）
+  * `MAIL_FROM`（发件地址）、`MAIL_SENDER_NAME`（显示名）
+  * `FRONTEND_BASE_URL`（前端重置页面根，示例 `https://www.rendazhang.com`）
+  * 将 `DEBUG_RETURN_RESET_TOKEN=0`（生产关闭返回 token）
+* **DNS 建议**（提升到达率）：
+
+  * **SPF**：`v=spf1 include:spf.<provider> -all` 或 `v=spf1 ip4:<YOUR_IP> -all`
+  * **DKIM**：生成 2048-bit 密钥，在 DNS TXT 公钥；私钥由邮件服务商托管
+  * **DMARC**：`v=DMARC1; p=quarantine; rua=mailto:dmarc@<domain>; adkim=s; aspf=s; pct=100`
+* **验证步骤**：
+
+  1. 设置上述变量，`sudo systemctl restart cloudchat`
+  2. 触发：`POST /cloudchat/auth/password/forgot`（返回 200，无 `debug_token`）
+  3. 观察 `journalctl -u cloudchat`，应看到 SMTP 连接/成功日志；检查收件箱是否收到
+* **回滚**：把 `DEBUG_RETURN_RESET_TOKEN=1`，注释掉 `SMTP_*`，重启 `cloudchat`
+
+---
+
 ## 7. 记录：Nginx 站点与 API 路由
 
 * **前端前缀**：`/cloudchat/`
@@ -483,13 +507,10 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ## 13. 待办（Next Actions）
 
-* [ ] **Flask-Session Cookie 改名**：`SESSION_COOKIE_NAME=cc_app`（或通过 `APP_SESSION_COOKIE_NAME` 环境变量），避免与 `cc_auth` 混淆。
-* [ ] **恢复生产安全属性**：线上启用 `COOKIE_SECURE=1`（默认），维持 HSTS；仅在本地 HTTP 调试时临时置 0。
-* [ ] 初始化 Alembic 迁移仓库（`alembic init`）以便未来 schema 变更可追踪；把当前 `schema.sql` 迁入迁移脚本。
-* [ ] 实现密码找回流程：`POST /cloudchat/auth/password/forgot`、`POST /cloudchat/auth/password/reset`（一次性 token）。
-* [ ] 审计表与日志：新增 `auth_audit`（login\_success/failed/mfa\_prompt 等），在路由中落记录，便于风控与可观测性。
-* [ ] 进一步限速/风控：登录失败 IP/账号维度自适应退避；可按需引入验证码钩子位（高风险时触发）。
-* [ ] MFA（第二阶段）：接入 TOTP 或 WebAuthn；将 `credentials` 中 `type='totp'|'webauthn'` 管理纳入。
-* [ ] 第三方登录骨架：接入 Google OIDC、WeChat（QRConnect），`credentials(provider, provider_uid)` 复用。
-* [ ] 备份：为 PostgreSQL 配置每日 `pg_dump` + 保留（7–14 天）；编写恢复演练步骤。
-* [ ] 更新本文档所有“<…>”占位信息并入库存档
+* [ ] **启用真实邮件发送**：填写 `SMTP_*`、`MAIL_FROM`、`MAIL_SENDER_NAME`、`FRONTEND_BASE_URL`；将 `DEBUG_RETURN_RESET_TOKEN=0`；`systemctl restart cloudchat`
+* [ ] **前端重置页面**：在前端实现 `/cloudchat/reset-password` 页面（读 `?token=`，提交到 `/cloudchat/auth/password/reset`）
+* [ ] **DNS 记录**：为发信域配置 SPF/DKIM/DMARC（SPF 选择 provider include 或服务器 IP；DKIM 2048-bit；DMARC 建议 `p=quarantine` 起步）
+* [ ] **投递验证**：向多个不同域的收件箱测试（Gmail/Outlook/QQ 等），观测到达率、是否进垃圾箱
+* [ ] **日志与告警**：为邮件发送失败打点并在 `journalctl` 中记录错误（mailer.py 已捕捉异常）；必要时加重试
+* [ ] **安全复核**：生产保持 `COOKIE_SECURE=1`、HSTS 开启；接口限速阈值复核
+* [ ] **（可选）优化会话吊销**：引入 `user_sess:<uid>` 反向索引，避免扫描 `sess:*`，提升重置时下线效率
