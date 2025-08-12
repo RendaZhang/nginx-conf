@@ -14,6 +14,7 @@
     - [6.2 PgBouncer（连接池）](#62-pgbouncer%E8%BF%9E%E6%8E%A5%E6%B1%A0)
     - [6.3 验收与检查（本次）](#63-%E9%AA%8C%E6%94%B6%E4%B8%8E%E6%A3%80%E6%9F%A5%E6%9C%AC%E6%AC%A1)
     - [6.4 直接建表（无历史迁移）— 已执行](#64-%E7%9B%B4%E6%8E%A5%E5%BB%BA%E8%A1%A8%E6%97%A0%E5%8E%86%E5%8F%B2%E8%BF%81%E7%A7%BB-%E5%B7%B2%E6%89%A7%E8%A1%8C)
+    - [6.5 后端认证 Blueprint（已部署）](#65-%E5%90%8E%E7%AB%AF%E8%AE%A4%E8%AF%81-blueprint%E5%B7%B2%E9%83%A8%E7%BD%B2)
   - [7. 记录：Nginx 站点与 API 路由](#7-%E8%AE%B0%E5%BD%95nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
   - [8. 日志与监控](#8-%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
   - [9. 安全基线](#9-%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
@@ -326,6 +327,26 @@
 
 ---
 
+### 6.5 后端认证 Blueprint（已部署）
+
+* **应用路由前缀**：`/auth`（Blueprint）；经 Nginx 统一前缀 `/cloudchat/` 反代后，对外为 **`/cloudchat/auth/*`**。
+* **已实现端点**：
+
+  * `POST /cloudchat/auth/register`
+  * `POST /cloudchat/auth/login`
+  * `POST /cloudchat/auth/logout`
+  * `GET  /cloudchat/auth/me`
+  * `GET  /cloudchat/auth/healthz`
+* **会话 Cookie**：
+
+  * 名称：`session`（当前）；建议在后续改为 `cc_auth` 以避免与 Flask-Session 默认 `session` 冲突（见待办）。
+  * 属性：`HttpOnly; SameSite=Lax; Secure=<由 COOKIE_SECURE 控制>`，`Max-Age=<SESSION_TTL_SECONDS 默认 604800>`；`Path=/`。
+* **限速**：登录按 *IP* 与 *identifier* 双维度，`10/10min`（Redis 计数）。
+* **依赖**：Redis（会话与限速）。
+* **验证结果**：已完成端到端注册/登录/登出/鉴权，本地（Ubuntu）与外网域名均通过；重复注册返回 `409`。
+
+---
+
 ## 7. 记录：Nginx 站点与 API 路由
 
 * **前端前缀**：`/cloudchat/`
@@ -334,7 +355,8 @@
   * `POST /cloudchat/auth/register`
   * `POST /cloudchat/auth/login`
   * `POST /cloudchat/auth/logout`
-  * `GET  /cloudchat/me`
+  * `GET  /cloudchat/auth/me`
+  * `GET  /cloudchat/auth/healthz`
 * **静态/缓存策略**：`<static rules>`
 
 > TODO：粘贴关键反代段（`location /cloudchat/ { ... }`）
@@ -399,31 +421,33 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ## 12. 变更记录（Changelog）
 
-| 日期         | 变更内容                                                      | 服务           | 版本/提交 | 操作人 | 回滚方式                |
-| ---------- | --------------------------------------------------------- | ------------ | ----- | --- | ------------------- |
-| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）          | redis-server |       |     | 还原 conf 与 MemoryMax |
-| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M      | cloudchat    |       |     | 还原 systemd 单元并重启    |
-| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）              | postgresql   | 16    |     | 停止服务/还原配置           |
-| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                   | postgresql   |       |     | 删除角色/库              |
-| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）              | pgbouncer    |       |     | 停止服务/回退应用连接串        |
-| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证  | pgbouncer    |       |     | 移除 userlist/还原配置    |
-| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）    | cloudchat    |       |     | 移除该行并重启             |
-| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi | cloudchat    |       |     | 卸载依赖或回滚 venv        |
-| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）      | cloudchat    |       |     | 删除文件/回滚提交           |
-| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                          | cloudchat    |       |     | 还原 DSN 并重启          |
-| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                       | postgresql   |       |     | 回滚：DROP TABLE ...   |
+| 日期         | 变更内容                                                               | 服务           | 版本/提交 | 操作人 | 回滚方式                |
+| ---------- | ------------------------------------------------------------------ | ------------ | ----- | --- | ------------------- |
+| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）                   | redis-server |       |     | 还原 conf 与 MemoryMax |
+| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M               | cloudchat    |       |     | 还原 systemd 单元并重启    |
+| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）                       | postgresql   | 16    |     | 停止服务/还原配置           |
+| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                            | postgresql   |       |     | 删除角色/库              |
+| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                       | pgbouncer    |       |     | 停止服务/回退应用连接串        |
+| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证           | pgbouncer    |       |     | 移除 userlist/还原配置    |
+| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）             | cloudchat    |       |     | 移除该行并重启             |
+| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi          | cloudchat    |       |     | 卸载依赖或回滚 venv        |
+| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）               | cloudchat    |       |     | 删除文件/回滚提交           |
+| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                                   | cloudchat    |       |     | 还原 DSN 并重启          |
+| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                                | postgresql   |       |     | 回滚：DROP TABLE ...   |
+| 2025-08-12 | **部署认证 Blueprint（/auth 前缀；对外 /cloudchat/auth）并完成端到端注册/登录/登出/鉴权测试** | cloudchat    |       |     | 回滚：禁用蓝图路由/还原代码      |
+| 2025-08-12 | **为本地测试设置 COOKIE\_SECURE=0；线上保持 COOKIE\_SECURE=1（Secure Cookie）**  | cloudchat    |       |     | 还原/调整环境变量并重启        |
 
 ---
 
 ## 13. 待办（Next Actions）
 
-* [ ] 初始化 Alembic 迁移仓库（`alembic init`）并生成首个迁移（基于 `models.py`）
-* [ ] 执行 `alembic upgrade head` 建表（users / credentials / sessions）
-* [ ] 实现后端认证路由：`POST /cloudchat/auth/register`、`POST /cloudchat/auth/login`、`POST /cloudchat/auth/logout`、`GET /cloudchat/me`
-* [ ] 将注册/登录逻辑接入数据库（Argon2id 哈希；会话仍走 Redis）
-* [ ] 前端登录/注册页面接入真实 API（同域、`credentials: include`）
-* [ ] 为 API 暴露 `/cloudchat/healthz` 健康检查（含依赖探测：Redis/DB）
-* [ ] 为 PostgreSQL 配置每日 `pg_dump` 备份与保留策略
-* [ ] 监控：为 `pgbouncer.log` 与 PostgreSQL 日志添加告警阈值
-* [ ] 轮换在会话中曾明文出现过的密钥（OPENAI/DEEPSEEK/DASHSCOPE/FLASK/REDIS）
+* [ ] **Cookie 命名冲突消解**：将认证 Cookie 名改为 `cc_auth`（或设置 `AUTH_COOKIE_NAME` 环境变量）；同时将 Flask-Session 的 `SESSION_COOKIE_NAME` 调为 `cc_app`，避免与认证 Cookie 都叫 `session`。
+* [ ] **恢复生产安全属性**：线上启用 `COOKIE_SECURE=1`（默认），维持 HSTS；仅在本地 HTTP 调试时临时置 0。
+* [ ] 初始化 Alembic 迁移仓库（`alembic init`）以便未来 schema 变更可追踪；把当前 `schema.sql` 迁入迁移脚本。
+* [ ] 实现密码找回流程：`POST /cloudchat/auth/password/forgot`、`POST /cloudchat/auth/password/reset`（一次性 token）。
+* [ ] 审计表与日志：新增 `auth_audit`（login\_success/failed/mfa\_prompt 等），在路由中落记录，便于风控与可观测性。
+* [ ] 进一步限速/风控：登录失败 IP/账号维度自适应退避；可按需引入验证码钩子位（高风险时触发）。
+* [ ] MFA（第二阶段）：接入 TOTP 或 WebAuthn；将 `credentials` 中 `type='totp'|'webauthn'` 管理纳入。
+* [ ] 第三方登录骨架：接入 Google OIDC、WeChat（QRConnect），`credentials(provider, provider_uid)` 复用。
+* [ ] 备份：为 PostgreSQL 配置每日 `pg_dump` + 保留（7–14 天）；编写恢复演练步骤。
 * [ ] 更新本文档所有“<…>”占位信息并入库存档
