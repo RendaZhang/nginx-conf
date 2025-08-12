@@ -201,7 +201,10 @@
   DASHSCOPE_API_KEY=***
   FLASK_SECRET_KEY=***
   REDIS_PASSWORD=***
+  DATABASE_URL=postgresql+psycopg://cloudchat:***@127.0.0.1:6432/cloudchat
   ```
+
+  > 注：实际环境文件已写入真实密码；文档中以 `***` 遮蔽。
 * ⚠️ 已将密钥从 systemd 单元迁移至独立文件；建议轮换曾明文出现的旧密钥。
 * **绑定端口**：`0.0.0.0:5000`（Nginx 反代）
 * **健康检查**：`GET /cloudchat/healthz`（建议添加）
@@ -262,6 +265,7 @@
   default_pool_size = 10
   reserve_pool_size = 5
   ```
+
 * **systemd override**：
 
   ```ini
@@ -269,9 +273,25 @@
   OOMScoreAdjust=-200
   MemoryMax=64M
   ```
-* auth\_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth\_query 从数据库读取凭据）
+
+* auth_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth_query 从数据库读取凭据）
+
 * **应用连接串**：`postgresql+psycopg://cloudchat:***@127.0.0.1:6432/cloudchat`
+
 * **SQLAlchemy 池参数**：`pool_size=5, max_overflow=0, pool_recycle=1800, pool_pre_ping=True`
+
+* **认证文件与验证（已完成）**：
+
+  * `auth_type = md5`，`userlist.txt` 由 `"md5" + md5(<密码><用户名>)` 生成；并设置 `admin_users = cloudchat`
+  * `userlist.txt` 权限 600，属主 `postgres:postgres`
+  * 验证：
+
+    ```bash
+    systemctl restart pgbouncer
+    psql -h 127.0.0.1 -p 6432 -U cloudchat -d cloudchat -c "select 1;"
+    psql -h 127.0.0.1 -p 6432 -U cloudchat pgbouncer -c "show pools;"
+    # 期望：cloudchat 池为 transaction 模式，sv_idle >= 0，sv_used/active 正常
+    ```
 
 ---
 
@@ -359,21 +379,27 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ## 12. 变更记录（Changelog）
 
-| 日期         | 变更内容                                                 | 服务           | 版本/提交 | 操作人 | 回滚方式                |
-| ---------- | ---------------------------------------------------- | ------------ | ----- | --- | ------------------- |
-| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）     | redis-server |       |     | 还原 conf 与 MemoryMax |
-| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M | cloudchat    |       |     | 还原 systemd 单元并重启    |
-| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）         | postgresql   | 16    |     | 停止服务/还原配置           |
-| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                              | postgresql   |       |     | 删除角色/库              |
-| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）         | pgbouncer    |       |     | 停止服务/回退应用连接串        |
+| 日期         | 变更内容                                                          | 服务           | 版本/提交 | 操作人 | 回滚方式                |
+| ---------- | ------------------------------------------------------------- | ------------ | ----- | --- | ------------------- |
+| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）              | redis-server |       |     | 还原 conf 与 MemoryMax |
+| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M          | cloudchat    |       |     | 还原 systemd 单元并重启    |
+| 2025-08-12 | 安装并配置 PostgreSQL（shared_buffers=96MB 等精简参数）                  | postgresql   | 16    |     | 停止服务/还原配置           |
+| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                       | postgresql   |       |     | 删除角色/库              |
+| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                  | pgbouncer    |       |     | 停止服务/回退应用连接串        |
+| 2025-08-12 | **写入 PgBouncer userlist（md5）并启用 admin_users；连通性与 pools 验证**  | pgbouncer    |       |     | 移除 userlist/还原配置    |
+| 2025-08-12 | **新增 `DATABASE_URL` 到 EnvironmentFile**                       | cloudchat    |       |     | 移除该行并重启             |
+| 2025-08-12 | **安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi** | cloudchat    |       |     | 卸载依赖或回滚 venv        |
+| 2025-08-12 | **创建 `db.py` 与 `models.py`（users/credentials/sessions）**      | cloudchat    |       |     | 删除文件/回滚提交           |
 
 ---
 
 ## 13. 待办（Next Actions）
 
-* [ ] 在 `/etc/pgbouncer/userlist.txt` 写入 `cloudchat` 的 md5 密码或改用 `auth_query`
-* [ ] 将 CloudChat 的数据库连接串切至 PgBouncer（6432），并设置 SQLAlchemy 连接池参数：`pool_size=5, max_overflow=0, pool_recycle=1800, pool_pre_ping=True`
-* [ ] 使用 Alembic 初始化迁移并生成用户/凭据/会话三表
+* [ ] 初始化 Alembic 迁移仓库（`alembic init`）并生成首个迁移（基于 `models.py`）
+* [ ] 执行 `alembic upgrade head` 建表（users / credentials / sessions）
+* [ ] 实现后端认证路由：`POST /cloudchat/auth/register`、`POST /cloudchat/auth/login`、`POST /cloudchat/auth/logout`、`GET /cloudchat/me`
+* [ ] 将注册/登录逻辑接入数据库（Argon2id 哈希；会话仍走 Redis）
+* [ ] 前端登录/注册页面接入真实 API（同域、`credentials: include`）
 * [ ] 为 API 暴露 `/cloudchat/healthz` 健康检查（含依赖探测：Redis/DB）
 * [ ] 为 PostgreSQL 配置每日 `pg_dump` 备份与保留策略
 * [ ] 监控：为 `pgbouncer.log` 与 PostgreSQL 日志添加告警阈值
