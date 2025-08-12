@@ -339,9 +339,9 @@
   * `GET  /cloudchat/auth/healthz`
 * **会话 Cookie**：
 
-  * 名称：`session`（当前）；建议在后续改为 `cc_auth` 以避免与 Flask-Session 默认 `session` 冲突（见待办）。
+  * 名称：`cc_auth`（可通过环境变量 `AUTH_COOKIE_NAME` 配置；默认 `cc_auth`）。
   * 属性：`HttpOnly; SameSite=Lax; Secure=<由 COOKIE_SECURE 控制>`，`Max-Age=<SESSION_TTL_SECONDS 默认 604800>`；`Path=/`。
-* **限速**：登录按 *IP* 与 *identifier* 双维度，`10/10min`（Redis 计数）。
+* **限速**：：登录按 *IP* 与 *identifier* 双维度，`10/10min`（Redis 计数）。
 * **依赖**：Redis（会话与限速）。
 * **验证结果**：已完成端到端注册/登录/登出/鉴权，本地（Ubuntu）与外网域名均通过；重复注册返回 `409`。
 
@@ -421,27 +421,28 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ## 12. 变更记录（Changelog）
 
-| 日期         | 变更内容                                                               | 服务           | 版本/提交 | 操作人 | 回滚方式                |
-| ---------- | ------------------------------------------------------------------ | ------------ | ----- | --- | ------------------- |
-| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）                   | redis-server |       |     | 还原 conf 与 MemoryMax |
-| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M               | cloudchat    |       |     | 还原 systemd 单元并重启    |
-| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）                       | postgresql   | 16    |     | 停止服务/还原配置           |
-| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                            | postgresql   |       |     | 删除角色/库              |
-| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                       | pgbouncer    |       |     | 停止服务/回退应用连接串        |
-| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证           | pgbouncer    |       |     | 移除 userlist/还原配置    |
-| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）             | cloudchat    |       |     | 移除该行并重启             |
-| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi          | cloudchat    |       |     | 卸载依赖或回滚 venv        |
-| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）               | cloudchat    |       |     | 删除文件/回滚提交           |
-| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                                   | cloudchat    |       |     | 还原 DSN 并重启          |
-| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                                | postgresql   |       |     | 回滚：DROP TABLE ...   |
-| 2025-08-12 | **部署认证 Blueprint（/auth 前缀；对外 /cloudchat/auth）并完成端到端注册/登录/登出/鉴权测试** | cloudchat    |       |     | 回滚：禁用蓝图路由/还原代码      |
-| 2025-08-12 | **为本地测试设置 COOKIE\_SECURE=0；线上保持 COOKIE\_SECURE=1（Secure Cookie）**  | cloudchat    |       |     | 还原/调整环境变量并重启        |
+| 日期         | 变更内容                                                                         | 服务           | 版本/提交 | 操作人 | 回滚方式                |
+| ---------- | ---------------------------------------------------------------------------- | ------------ | ----- | --- | ------------------- |
+| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）                             | redis-server |       |     | 还原 conf 与 MemoryMax |
+| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M                         | cloudchat    |       |     | 还原 systemd 单元并重启    |
+| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）                                 | postgresql   | 16    |     | 停止服务/还原配置           |
+| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                                      | postgresql   |       |     | 删除角色/库              |
+| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                                 | pgbouncer    |       |     | 停止服务/回退应用连接串        |
+| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证                     | pgbouncer    |       |     | 移除 userlist/还原配置    |
+| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）                       | cloudchat    |       |     | 移除该行并重启             |
+| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi                    | cloudchat    |       |     | 卸载依赖或回滚 venv        |
+| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）                         | cloudchat    |       |     | 删除文件/回滚提交           |
+| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                                             | cloudchat    |       |     | 还原 DSN 并重启          |
+| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                                          | postgresql   |       |     | 回滚：DROP TABLE ...   |
+| 2025-08-12 | 部署认证 Blueprint（/auth 前缀；对外 /cloudchat/auth）并完成端到端注册/登录/登出/鉴权测试               | cloudchat    |       |     | 回滚：禁用蓝图路由/还原代码      |
+| 2025-08-12 | 为本地测试设置 COOKIE\_SECURE=0；线上保持 COOKIE\_SECURE=1（Secure Cookie）                | cloudchat    |       |     | 还原/调整环境变量并重启        |
+| 2025-08-13 | **Cookie 命名冲突消解**：认证 Cookie 改为 `cc_auth`；Flask-Session Cookie 计划改名为 `cc_app` | cloudchat    |       |     | 恢复旧名并重启             |
 
 ---
 
 ## 13. 待办（Next Actions）
 
-* [ ] **Cookie 命名冲突消解**：将认证 Cookie 名改为 `cc_auth`（或设置 `AUTH_COOKIE_NAME` 环境变量）；同时将 Flask-Session 的 `SESSION_COOKIE_NAME` 调为 `cc_app`，避免与认证 Cookie 都叫 `session`。
+* [ ] **Flask-Session Cookie 改名**：`SESSION_COOKIE_NAME=cc_app`（或通过 `APP_SESSION_COOKIE_NAME` 环境变量），避免与 `cc_auth` 混淆。
 * [ ] **恢复生产安全属性**：线上启用 `COOKIE_SECURE=1`（默认），维持 HSTS；仅在本地 HTTP 调试时临时置 0。
 * [ ] 初始化 Alembic 迁移仓库（`alembic init`）以便未来 schema 变更可追踪；把当前 `schema.sql` 迁入迁移脚本。
 * [ ] 实现密码找回流程：`POST /cloudchat/auth/password/forgot`、`POST /cloudchat/auth/password/reset`（一次性 token）。
