@@ -18,6 +18,7 @@
     - [6.6 密码找回与重置（已部署）](#66-%E5%AF%86%E7%A0%81%E6%89%BE%E5%9B%9E%E4%B8%8E%E9%87%8D%E7%BD%AE%E5%B7%B2%E9%83%A8%E7%BD%B2)
     - [6.7 生产邮件发送（已启用：Aliyun DirectMail）](#67-%E7%94%9F%E4%BA%A7%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81%E5%B7%B2%E5%90%AF%E7%94%A8aliyun-directmail)
     - [6.8 后端接口清单与契约（当前版）](#68-%E5%90%8E%E7%AB%AF%E6%8E%A5%E5%8F%A3%E6%B8%85%E5%8D%95%E4%B8%8E%E5%A5%91%E7%BA%A6%E5%BD%93%E5%89%8D%E7%89%88)
+    - [6.9 后端代码审计与修改建议（待应用）](#69-%E5%90%8E%E7%AB%AF%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E4%B8%8E%E4%BF%AE%E6%94%B9%E5%BB%BA%E8%AE%AE%E5%BE%85%E5%BA%94%E7%94%A8)
   - [7. 记录：Nginx 站点与 API 路由](#7-%E8%AE%B0%E5%BD%95nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
   - [8. 日志与监控](#8-%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
   - [9. 安全基线](#9-%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
@@ -296,7 +297,7 @@
   MemoryMax=64M
   ```
 
-* auth\_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth\_query 从数据库读取凭据）
+* auth_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth\_query 从数据库读取凭据）
 
 * **应用连接串**：`postgresql+psycopg://cloudchat:***@127.0.0.1:6432/cloudchat`
 
@@ -421,6 +422,18 @@
 * **Cookie**：`cc_auth`（认证，会话 Redis 保存 `sess:<sid> -> user_id`，`Max-Age=604800`，`HttpOnly; SameSite=Lax; Secure=<按环境>`）；`cc_app`（Flask-Session）。
 * **错误格式**：`{ ok:false, error:"..." }`。
 * **跨域/凭据**：同域部署，前端请求需携带 `credentials: 'include'`。
+
+### 6.9 后端代码审计与修改建议（待应用）
+
+1. **注册限速**：为 `/auth/register` 增加限速（IP 10/小时；email 3/小时），防撞库与滥用。
+2. **密码强度**：注册/重置统一使用最小复杂度校验（≥8 且至少包含 2 类字符：字母/数字/特殊）。
+3. **健康检查增强**：`/auth/healthz` 同时探测 PostgreSQL（`select 1`）；当前仅 Redis。
+4. **Argon2 哈希升级**：登录成功后 `ph.check_needs_rehash()` 时后台平滑更新哈希。
+5. **生产缓存控制**：认证相关响应头加 `Cache-Control: no-store`（或在 Nginx 针对 `/cloudchat/auth/*` 设定）。
+6. **APScheduler**：当前每个 Gunicorn worker 启动 1 个调度器，建议改为 systemd 定时器/cron，避免多实例重复执行。
+7. **ORM 与 schema 对齐**（非阻塞）：`models.Session.ip` 类型与 `schema.sql`（INET）不一致；时间戳默认建议用 `func.now()` 或 UTC-aware `datetime.now(timezone.utc)`。
+
+> 以上修改未影响现网协议；落实后请在“变更记录”追加条目，并把本段落标记为“（已完成）”。
 
 ---
 
