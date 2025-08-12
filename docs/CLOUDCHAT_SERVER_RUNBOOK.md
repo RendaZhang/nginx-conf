@@ -16,7 +16,8 @@
     - [6.4 直接建表（无历史迁移）— 已执行](#64-%E7%9B%B4%E6%8E%A5%E5%BB%BA%E8%A1%A8%E6%97%A0%E5%8E%86%E5%8F%B2%E8%BF%81%E7%A7%BB-%E5%B7%B2%E6%89%A7%E8%A1%8C)
     - [6.5 后端认证 Blueprint（已部署）](#65-%E5%90%8E%E7%AB%AF%E8%AE%A4%E8%AF%81-blueprint%E5%B7%B2%E9%83%A8%E7%BD%B2)
     - [6.6 密码找回与重置（已部署）](#66-%E5%AF%86%E7%A0%81%E6%89%BE%E5%9B%9E%E4%B8%8E%E9%87%8D%E7%BD%AE%E5%B7%B2%E9%83%A8%E7%BD%B2)
-    - [6.7 生产邮件发送（准备启用）](#67-%E7%94%9F%E4%BA%A7%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81%E5%87%86%E5%A4%87%E5%90%AF%E7%94%A8)
+    - [6.7 生产邮件发送（已启用：Aliyun DirectMail）](#67-%E7%94%9F%E4%BA%A7%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81%E5%B7%B2%E5%90%AF%E7%94%A8aliyun-directmail)
+    - [6.8 后端接口清单与契约（当前版）](#68-%E5%90%8E%E7%AB%AF%E6%8E%A5%E5%8F%A3%E6%B8%85%E5%8D%95%E4%B8%8E%E5%A5%91%E7%BA%A6%E5%BD%93%E5%89%8D%E7%89%88)
   - [7. 记录：Nginx 站点与 API 路由](#7-%E8%AE%B0%E5%BD%95nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
   - [8. 日志与监控](#8-%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
   - [9. 安全基线](#9-%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
@@ -211,18 +212,18 @@
 
   # 密码找回/重置
   PWRESET_TOKEN_TTL=900
-  DEBUG_RETURN_RESET_TOKEN=1
+  DEBUG_RETURN_RESET_TOKEN=0
   PWRESET_REVOKE_SESSIONS=1
 
-  # 邮件（生产启用）
-  # SMTP_HOST=smtp.example.com
-  # SMTP_PORT=587
-  # SMTP_USER=postmaster@example.com
-  # SMTP_PASS=***
-  # SMTP_TLS=1
-  # MAIL_FROM=noreply@example.com
-  # MAIL_SENDER_NAME=CloudChat
-  # FRONTEND_BASE_URL=https://www.rendazhang.com
+  # DirectMail SMTP（已启用）
+  SMTP_HOST=smtpdm-ap-southeast-1.aliyuncs.com
+  SMTP_PORT=80
+  SMTP_USER=noreply@mail.rendazhang.com
+  SMTP_PASS=***
+  SMTP_TLS=1
+  MAIL_FROM=noreply@mail.rendazhang.com
+  MAIL_SENDER_NAME=CloudChat
+  FRONTEND_BASE_URL=https://www.rendazhang.com
   ```
 
   > 注：实际环境文件已写入真实密码；文档中以 `***` 遮蔽。
@@ -384,26 +385,42 @@
 
 ---
 
-### 6.7 生产邮件发送（准备启用）
+### 6.7 生产邮件发送（已启用：Aliyun DirectMail）
 
-* **发送方式**：后端通过 `mailer.py` 使用 SMTP（STARTTLS/587，或可改 SSL/465）。
+* **发送方式**：后端通过 `mailer.py` 使用 SMTP（推荐 STARTTLS/80，或 SSL/465）。
 * **所需环境变量**（`/etc/cloudchat/cloudchat.env`）：
 
-  * `SMTP_HOST`、`SMTP_PORT`（默认 587）、`SMTP_USER`、`SMTP_PASS`、`SMTP_TLS=1`（STARTTLS）
-  * `MAIL_FROM`（发件地址）、`MAIL_SENDER_NAME`（显示名）
-  * `FRONTEND_BASE_URL`（前端重置页面根，示例 `https://www.rendazhang.com`）
-  * 将 `DEBUG_RETURN_RESET_TOKEN=0`（生产关闭返回 token）
-* **DNS 建议**（提升到达率）：
+  * `SMTP_HOST`、`SMTP_PORT`、`SMTP_USER`、`SMTP_PASS`、`SMTP_TLS`
+  * `MAIL_FROM`、`MAIL_SENDER_NAME`
+  * `FRONTEND_BASE_URL`
+  * `DEBUG_RETURN_RESET_TOKEN=0`（生产关闭返回 token）
+* **DirectMail 区域入口**：
 
-  * **SPF**：`v=spf1 include:spf.<provider> -all` 或 `v=spf1 ip4:<YOUR_IP> -all`
-  * **DKIM**：生成 2048-bit 密钥，在 DNS TXT 公钥；私钥由邮件服务商托管
-  * **DMARC**：`v=DMARC1; p=quarantine; rua=mailto:dmarc@<domain>; adkim=s; aspf=s; pct=100`
-* **验证步骤**：
+  * 新加坡：`smtpdm-ap-southeast-1.aliyuncs.com`（建议端口 **80** + STARTTLS）
+  * 杭州（中国内地）：`smtpdm.aliyun.com`（若在内地网络）
+* **DNS（已完成）**：TXT 所有权、SPF、MX、跟踪 CNAME、DKIM、DMARC 已配置并通过验证。
+* **验证结果**：`/cloudchat/auth/password/forgot` 触发后，收件箱已收到带重置链接（15 分钟有效）的邮件。
+* **回滚**：把 `DEBUG_RETURN_RESET_TOKEN=1`，注释 `SMTP_*`，重启 `cloudchat`。
 
-  1. 设置上述变量，`sudo systemctl restart cloudchat`
-  2. 触发：`POST /cloudchat/auth/password/forgot`（返回 200，无 `debug_token`）
-  3. 观察 `journalctl -u cloudchat`，应看到 SMTP 连接/成功日志；检查收件箱是否收到
-* **回滚**：把 `DEBUG_RETURN_RESET_TOKEN=1`，注释掉 `SMTP_*`，重启 `cloudchat`
+---
+
+### 6.8 后端接口清单与契约（当前版）
+
+> 统一前缀：对内 `/auth/*`；对外经 Nginx 为 `/cloudchat/auth/*`
+
+| Endpoint                          | 方法   | 请求体（必填字段）                                     | 典型响应                                      | 可能状态码         | 备注                                               |
+| --------------------------------- | ---- | --------------------------------------------- | ----------------------------------------- | ------------- | ------------------------------------------------ |
+| `/cloudchat/auth/register`        | POST | `{ email?, phone?, password, display_name? }` | `{ ok:true }`                             | 201, 400, 409 | email/phone 至少一项；弱口令 400；重复 409                  |
+| `/cloudchat/auth/login`           | POST | `{ identifier, password }`                    | `{ ok:true }` + `Set-Cookie: cc_auth=...` | 200, 401      | 防枚举：失败统一 401；限速 `10/10min`（IP+账号）                |
+| `/cloudchat/auth/logout`          | POST | -                                             | `{ ok:true }` + 清空 `cc_auth`              | 200           | 幂等                                               |
+| `/cloudchat/auth/me`              | GET  | Cookie `cc_auth`                              | `{ ok:true, user:{...} }`                 | 200, 401      | 用户字段：id/uid/email/phone/display\_name/is\_active |
+| `/cloudchat/auth/password/forgot` | POST | `{ identifier }`                              | `{ ok:true }`                             | 200           | 生产不返回 token；限速：IP 20/h、identifier 5/h            |
+| `/cloudchat/auth/password/reset`  | POST | `{ token, password }`                         | `{ ok:true, revoked_sessions:n }`         | 200, 400      | 一次性 token；重置后会话强制下线（简单版）                         |
+| `/cloudchat/auth/healthz`         | GET  | -                                             | `{ ok:true }`                             | 200/503       | 依赖探测（Redis）                                      |
+
+* **Cookie**：`cc_auth`（认证，会话 Redis 保存 `sess:<sid> -> user_id`，`Max-Age=604800`，`HttpOnly; SameSite=Lax; Secure=<按环境>`）；`cc_app`（Flask-Session）。
+* **错误格式**：`{ ok:false, error:"..." }`。
+* **跨域/凭据**：同域部署，前端请求需携带 `credentials: 'include'`。
 
 ---
 
@@ -483,25 +500,25 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ## 12. 变更记录（Changelog）
 
-| 日期         | 变更内容                                                                    | 服务           | 版本/提交     | 操作人 | 回滚方式                |                     |
-| ---------- | ----------------------------------------------------------------------- | ------------ | --------- | --- | ------------------- | ------------------- |
-| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）                        | redis-server |           |     | 还原 conf 与 MemoryMax |                     |
-| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M                    | cloudchat    |           |     | 还原 systemd 单元并重启    |                     |
-| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）                            | postgresql   | 16        |     | 停止服务/还原配置           |                     |
-| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                                 | postgresql   |           |     | 删除角色/库              |                     |
-| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                            | pgbouncer    |           |     | 停止服务/回退应用连接串        |                     |
-| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证                | pgbouncer    |           |     | 移除 userlist/还原配置    |                     |
-| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）                  | cloudchat    |           |     | 移除该行并重启             |                     |
-| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi               | cloudchat    |           |     | 卸载依赖或回滚 venv        |                     |
-| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）                    | cloudchat    |           |     | 删除文件/回滚提交           |                     |
-| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                                        | cloudchat    |           |     | 还原 DSN 并重启          |                     |
-| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                                     | postgresql   |           |     | 回滚：DROP TABLE ...   |                     |
-| 2025-08-12 | 部署认证 Blueprint（/auth 前缀；对外 /cloudchat/auth）并完成端到端注册/登录/登出/鉴权测试          | cloudchat    |           |     | 回滚：禁用蓝图路由/还原代码      |                     |
-| 2025-08-12 | 为本地测试设置 COOKIE\_SECURE=0；线上保持 COOKIE\_SECURE=1（Secure Cookie）           | cloudchat    |           |     | 还原/调整环境变量并重启        |                     |
-| 2025-08-13 | Cookie 命名冲突消解：认证 Cookie 改为 `cc_auth`；Flask-Session Cookie 准备改为 `cc_app` | cloudchat    |           |     | 恢复旧名并重启             |                     |
-| 2025-08-13 | **部署密码找回与重置**（Redis token，TTL=900s；接口 \`/auth/password/forgot           | reset\`）     | cloudchat |     |                     | 移除路由/清理 Redis token |
-| 2025-08-13 | **启用重置后会话强制下线（简单版）**（扫描 `sess:*`；本次验证 `revoked_sessions=7`）             | cloudchat    |           |     | 关闭功能位或恢复旧逻辑         |                     |
-| 2025-08-13 | 添加 `mailer.py` 邮件适配器（SMTP\_\* 未启用；待生产开启并关闭 debug\_token 返回）             | cloudchat    |           |     | 删除/禁用邮件发送调用         |                     |
+| 日期         | 变更内容                                                                                                          | 服务           | 版本/提交     | 操作人 | 回滚方式                |                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------- | ------------ | --------- | --- | ------------------- | ------------------- |
+| 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）                                                              | redis-server |           |     | 还原 conf 与 MemoryMax |                     |
+| 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M                                                          | cloudchat    |           |     | 还原 systemd 单元并重启    |                     |
+| 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）                                                                  | postgresql   | 16        |     | 停止服务/还原配置           |                     |
+| 2025-08-12 | 创建数据库与最小权限账号（cloudchat）                                                                                       | postgresql   |           |     | 删除角色/库              |                     |
+| 2025-08-12 | 安装并配置 PgBouncer（transaction 池，MemoryMax=64M）                                                                  | pgbouncer    |           |     | 停止服务/回退应用连接串        |                     |
+| 2025-08-12 | 写入 PgBouncer userlist（md5）并启用 admin\_users；连通性与 pools 验证                                                      | pgbouncer    |           |     | 移除 userlist/还原配置    |                     |
+| 2025-08-12 | 新增 `DATABASE_URL` 到 EnvironmentFile（指向 PgBouncer 6432）                                                        | cloudchat    |           |     | 移除该行并重启             |                     |
+| 2025-08-12 | 安装依赖：psycopg2-binary / SQLAlchemy / Alembic / argon2-cffi                                                     | cloudchat    |           |     | 卸载依赖或回滚 venv        |                     |
+| 2025-08-12 | 创建 `db.py` 与 `models.py`（users/credentials/sessions）                                                          | cloudchat    |           |     | 删除文件/回滚提交           |                     |
+| 2025-08-12 | 对齐驱动与 DSN（psycopg2）并重启 cloudchat                                                                              | cloudchat    |           |     | 还原 DSN 并重启          |                     |
+| 2025-08-12 | 执行 schema.sql 建表并验证三表与索引；完成一次冒烟插入测试                                                                           | postgresql   |           |     | 回滚：DROP TABLE ...   |                     |
+| 2025-08-12 | 部署认证 Blueprint（/auth 前缀；对外 /cloudchat/auth）并完成端到端注册/登录/登出/鉴权测试                                                | cloudchat    |           |     | 回滚：禁用蓝图路由/还原代码      |                     |
+| 2025-08-12 | 为本地测试设置 COOKIE\_SECURE=0；线上保持 COOKIE\_SECURE=1（Secure Cookie）                                                 | cloudchat    |           |     | 还原/调整环境变量并重启        |                     |
+| 2025-08-13 | Cookie 命名冲突消解：认证 Cookie 改为 `cc_auth`；Flask-Session Cookie `cc_app`                                            | cloudchat    |           |     | 恢复旧名并重启             |                     |
+| 2025-08-13 | 部署密码找回与重置（Redis token，TTL=900s；接口 \`/auth/password/forgot                                                     | reset\`）     | cloudchat |     |                     | 移除路由/清理 Redis token |
+| 2025-08-13 | 启用重置后会话强制下线（简单版）扫描 `sess:*`；本次验证 `revoked_sessions=7`                                                         | cloudchat    |           |     | 关闭功能位或恢复旧逻辑         |                     |
+| 2025-08-13 | **DirectMail SMTP 上线**（新加坡入口 `smtpdm-ap-southeast-1.aliyuncs.com:80` + STARTTLS；`DEBUG_RETURN_RESET_TOKEN=0`） | cloudchat    |           |     | 关闭 SMTP 或回滚到调试模式    |                     |
 
 ---
 
