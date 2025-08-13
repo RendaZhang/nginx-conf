@@ -2,34 +2,32 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [CloudChat 服务器配置运行手册（模板）](#cloudchat-%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8C%E6%A8%A1%E6%9D%BF)
-  - [0. 概览（Overview）](#0-%E6%A6%82%E8%A7%88overview)
-  - [1. 架构（现状 / 规划）](#1-%E6%9E%B6%E6%9E%84%E7%8E%B0%E7%8A%B6--%E8%A7%84%E5%88%92)
-  - [2. 服务与资源预算（systemd + OOM）](#2-%E6%9C%8D%E5%8A%A1%E4%B8%8E%E8%B5%84%E6%BA%90%E9%A2%84%E7%AE%97systemd--oom)
-  - [3. Nginx](#3-nginx)
-  - [4. Redis](#4-redis)
-  - [5. CloudChat（后端 API）](#5-cloudchat%E5%90%8E%E7%AB%AF-api)
-  - [6. 数据库（已部署）](#6-%E6%95%B0%E6%8D%AE%E5%BA%93%E5%B7%B2%E9%83%A8%E7%BD%B2)
-    - [6.1 PostgreSQL（精简配置）](#61-postgresql%E7%B2%BE%E7%AE%80%E9%85%8D%E7%BD%AE)
-    - [6.2 PgBouncer（连接池）](#62-pgbouncer%E8%BF%9E%E6%8E%A5%E6%B1%A0)
-    - [6.3 验收与检查（本次）](#63-%E9%AA%8C%E6%94%B6%E4%B8%8E%E6%A3%80%E6%9F%A5%E6%9C%AC%E6%AC%A1)
-    - [6.4 直接建表（无历史迁移）— 已执行](#64-%E7%9B%B4%E6%8E%A5%E5%BB%BA%E8%A1%A8%E6%97%A0%E5%8E%86%E5%8F%B2%E8%BF%81%E7%A7%BB-%E5%B7%B2%E6%89%A7%E8%A1%8C)
-    - [6.5 后端认证 Blueprint（已部署）](#65-%E5%90%8E%E7%AB%AF%E8%AE%A4%E8%AF%81-blueprint%E5%B7%B2%E9%83%A8%E7%BD%B2)
-    - [6.6 密码找回与重置（已部署）](#66-%E5%AF%86%E7%A0%81%E6%89%BE%E5%9B%9E%E4%B8%8E%E9%87%8D%E7%BD%AE%E5%B7%B2%E9%83%A8%E7%BD%B2)
-    - [6.7 生产邮件发送（已启用：Aliyun DirectMail）](#67-%E7%94%9F%E4%BA%A7%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81%E5%B7%B2%E5%90%AF%E7%94%A8aliyun-directmail)
-    - [6.8 后端接口清单与契约（当前版）](#68-%E5%90%8E%E7%AB%AF%E6%8E%A5%E5%8F%A3%E6%B8%85%E5%8D%95%E4%B8%8E%E5%A5%91%E7%BA%A6%E5%BD%93%E5%89%8D%E7%89%88)
-    - [6.9 后端代码审计与修改建议（待应用）](#69-%E5%90%8E%E7%AB%AF%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E4%B8%8E%E4%BF%AE%E6%94%B9%E5%BB%BA%E8%AE%AE%E5%BE%85%E5%BA%94%E7%94%A8)
-  - [7. 记录：Nginx 站点与 API 路由](#7-%E8%AE%B0%E5%BD%95nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
-  - [8. 日志与监控](#8-%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
-  - [9. 安全基线](#9-%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
-  - [10. 备份与恢复](#10-%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D)
-  - [11. 运维常用清单（Cheat Sheet）](#11-%E8%BF%90%E7%BB%B4%E5%B8%B8%E7%94%A8%E6%B8%85%E5%8D%95cheat-sheet)
-  - [12. 变更记录（Changelog）](#12-%E5%8F%98%E6%9B%B4%E8%AE%B0%E5%BD%95changelog)
-  - [13. 待办（Next Actions）](#13-%E5%BE%85%E5%8A%9Enext-actions)
+- [服务器配置运行手册](#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8C)
+  - [概览](#%E6%A6%82%E8%A7%88)
+  - [架构](#%E6%9E%B6%E6%9E%84)
+  - [服务与资源预算](#%E6%9C%8D%E5%8A%A1%E4%B8%8E%E8%B5%84%E6%BA%90%E9%A2%84%E7%AE%97)
+  - [Nginx](#nginx)
+  - [Redis](#redis)
+  - [CloudChat 后端 API](#cloudchat-%E5%90%8E%E7%AB%AF-api)
+  - [数据库](#%E6%95%B0%E6%8D%AE%E5%BA%93)
+    - [PostgreSQL 精简配置](#postgresql-%E7%B2%BE%E7%AE%80%E9%85%8D%E7%BD%AE)
+    - [PgBouncer 连接池](#pgbouncer-%E8%BF%9E%E6%8E%A5%E6%B1%A0)
+    - [验收与检查](#%E9%AA%8C%E6%94%B6%E4%B8%8E%E6%A3%80%E6%9F%A5)
+    - [建表](#%E5%BB%BA%E8%A1%A8)
+    - [后端认证](#%E5%90%8E%E7%AB%AF%E8%AE%A4%E8%AF%81)
+    - [密码找回与重置](#%E5%AF%86%E7%A0%81%E6%89%BE%E5%9B%9E%E4%B8%8E%E9%87%8D%E7%BD%AE)
+    - [生产邮件发送](#%E7%94%9F%E4%BA%A7%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81)
+    - [后端接口清单与契约](#%E5%90%8E%E7%AB%AF%E6%8E%A5%E5%8F%A3%E6%B8%85%E5%8D%95%E4%B8%8E%E5%A5%91%E7%BA%A6)
+  - [Nginx 站点与 API 路由](#nginx-%E7%AB%99%E7%82%B9%E4%B8%8E-api-%E8%B7%AF%E7%94%B1)
+  - [日志与监控](#%E6%97%A5%E5%BF%97%E4%B8%8E%E7%9B%91%E6%8E%A7)
+  - [安全基线](#%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
+  - [备份与恢复](#%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D)
+  - [运维常用清单](#%E8%BF%90%E7%BB%B4%E5%B8%B8%E7%94%A8%E6%B8%85%E5%8D%95)
+  - [变更记录](#%E5%8F%98%E6%9B%B4%E8%AE%B0%E5%BD%95)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# CloudChat 服务器配置运行手册（模板）
+# 服务器配置运行手册
 
 > 适用：Ubuntu 24.04（小内存 1 GiB 级别），Nginx + Flask（Gunicorn/ gevent）+ Redis；**规划**引入 PgBouncer + PostgreSQL。&#x20;
 >
@@ -37,7 +35,7 @@
 
 ---
 
-## 0. 概览（Overview）
+## 概览
 
 * **主机名**：`iZj6c1i25mt610l0q2g2amZ`
 * **云厂商 / 地域**：`阿里云 / cn-hongkong`
@@ -46,13 +44,11 @@
 * **时区 / NTP**：`<Asia/Shanghai>` / `chrony`
 * **交换空间（Swap）**：启用，大小 **2 GiB**
 * **当前内存快照**（引入 PgBouncer + PostgreSQL 前的执行时记录）：
-
   ```
   Mem:  total 690Mi | used 357Mi | free 88Mi | buff/cache 362Mi | available 333Mi
   Swap: total 2.0Gi | used 198Mi | free 1.8Gi
   ```
 * **系统精简与优化**（已实施）：
-
   * journald **日志大小/生存时间限制**（已配置）
   * **内核参数**调优（sysctl）
   * **轻量化组件替换**以降低常驻内存
@@ -61,7 +57,7 @@
 
 ---
 
-## 1. 架构（现状 / 规划）
+## 架构
 
 ```
 ┌─────┐     HTTPS      ┌──────────────────┐
@@ -85,7 +81,9 @@
 
 ---
 
-## 2. 服务与资源预算（systemd + OOM）
+## 服务与资源预算
+
+systemd + OOM
 
 > 目标：在 1 GiB 主机上保持稳定，数据库“保命”，应用可自愈。
 
@@ -97,12 +95,9 @@
 | **pgbouncer**                     | **-200**          | **64M**      | -200              | 64M          | 事务级连接池    |   |
 | **postgresql**                    | **-500**          | **260M**     | **-500**（保命）      | 260M         | 精简配置      |   |
 
-> ✅ 上表“当前”列已根据 Step 1–3 生效配置更新；如与实际不符请以 `systemctl show` 与配置文件为准。
-
-## 3. Nginx
+## Nginx
 
 * **systemd override**：`/etc/systemd/system/nginx.service.d/override.conf`
-
   ```ini
   [Service]
   OOMScoreAdjust=-200
@@ -110,12 +105,10 @@
 * **主配置**：`/etc/nginx/nginx.conf`
 * **站点配置**：`/etc/nginx/sites-available/<site>`（链接至 `sites-enabled/`）
 * **反代要点**：
-
   * 统一前缀：`/cloudchat/` → 后端 `127.0.0.1:5000`
   * 关闭对 API 的缓存；开启 `proxy_http_version 1.1` 与必要的头传递
 * **TLS**：`<证书与私钥路径>`；自动续期任务：`<cron/timer>`
 * **常用命令**：
-
   ```bash
   sudo nginx -t && sudo systemctl reload nginx
   journalctl -u nginx -e --no-pager
@@ -125,19 +118,16 @@
 
 ---
 
-## 4. Redis
+## Redis
 
 * **systemd override**：`/etc/systemd/system/redis-server.service.d/override.conf`
-
   ```ini
   [Service]
   OOMScoreAdjust=-100
   MemoryMax=160M
   ```
 * **配置文件**：`/etc/redis/redis.conf`
-
   * 建议：
-
     ```
     bind 127.0.0.1
     protected-mode yes
@@ -160,17 +150,15 @@
     ```
 * **用途**：会话、限流、短期队列
 * **检查**：
-
   ```bash
   redis-cli INFO memory | egrep 'used_memory_human|maxmemory'
   ```
 
 ---
 
-## 5. CloudChat（后端 API）
+## CloudChat 后端 API
 
 * **systemd 单元**：`/etc/systemd/system/cloudchat.service`
-
   ```ini
   [Unit]
   Description=CloudChat Flask App with Gunicorn
@@ -199,7 +187,6 @@
   WantedBy=multi-user.target
   ```
 * **环境变量文件**：`/etc/cloudchat/cloudchat.env`（**权限 600**）
-
   ```
   PATH=/opt/cloudchat/venv/bin
   OPENAI_API_KEY=***
@@ -226,21 +213,18 @@
   MAIL_SENDER_NAME=CloudChat
   FRONTEND_BASE_URL=https://www.rendazhang.com
   ```
-
   > 注：实际环境文件已写入真实密码；文档中以 `***` 遮蔽。
-* ⚠️ 已将密钥从 systemd 单元迁移至独立文件；建议轮换曾明文出现的旧密钥。
 * **绑定端口**：`0.0.0.0:5000`（Nginx 反代）
 * **健康检查**：`GET /cloudchat/healthz`（建议添加）
 
 ---
 
-## 6. 数据库（已部署）
+## 数据库
 
-### 6.1 PostgreSQL（精简配置）
+### PostgreSQL 精简配置
 
 * **软件**：`postgresql` `postgresql-contrib`
 * **配置**：`/etc/postgresql/16/main/postgresql.conf`
-
   ```
   shared_buffers = 96MB
   work_mem = 4MB
@@ -253,7 +237,6 @@
   min_wal_size = 64MB
   ```
 * **systemd override**（保命）：`systemctl edit postgresql`
-
   ```ini
   [Service]
   OOMScoreAdjust=-500
@@ -261,17 +244,15 @@
   ```
 * **网络访问**：仅本机（`pg_hba.conf` 允许 `local`/`127.0.0.1`）
 * **账号/库**（最小权限）：
-
   ```sql
   CREATE ROLE cloudchat LOGIN PASSWORD '***' NOSUPERUSER NOCREATEDB NOCREATEROLE;
   CREATE DATABASE cloudchat OWNER cloudchat;
   ```
 * **迁移策略**：SQLAlchemy Alembic（记录 versions/ 与 alembic.ini）
 
-### 6.2 PgBouncer（连接池）
+### PgBouncer 连接池
 
 * **配置**：`/etc/pgbouncer/pgbouncer.ini`
-
   ```ini
   [databases]
   cloudchat = host=localhost port=5432 dbname=cloudchat user=cloudchat password=***
@@ -288,27 +269,19 @@
   default_pool_size = 10
   reserve_pool_size = 5
   ```
-
 * **systemd override**：
-
   ```ini
   [Service]
   OOMScoreAdjust=-200
   MemoryMax=64M
   ```
-
 * auth_file 提示：创建 /etc/pgbouncer/userlist.txt（权限 600），示例："cloudchat" "md5\<hashed\_password>"（或改用 auth\_query 从数据库读取凭据）
-
 * **应用连接串**：`postgresql+psycopg://cloudchat:***@127.0.0.1:6432/cloudchat`
-
 * **SQLAlchemy 池参数**：`pool_size=5, max_overflow=0, pool_recycle=1800, pool_pre_ping=True`
-
 * **认证文件与验证（已完成）**：
-
   * `auth_type = md5`，`userlist.txt` 由 `"md5" + md5(<密码><用户名>)` 生成；并设置 `admin_users = cloudchat`
   * `userlist.txt` 权限 600，属主 `postgres:postgres`
   * 验证：
-
     ```bash
     systemctl restart pgbouncer
     psql -h 127.0.0.1 -p 6432 -U cloudchat -d cloudchat -c "select 1;"
@@ -316,9 +289,7 @@
     # 期望：cloudchat 池为 transaction 模式，sv_idle >= 0，sv_used/active 正常
     ```
 
----
-
-### 6.3 验收与检查（本次）
+### 验收与检查
 
 * 连接数（应小于 `max_connections=20`）：
 
@@ -327,9 +298,9 @@
   ```
 * 资源观察：`systemd-cgtop`、`journalctl -u *`、`free -h`、`vmstat 1`
 
----
+### 建表
 
-### 6.4 直接建表（无历史迁移）— 已执行
+直接建表 - 无历史迁移
 
 * **驱动与 DSN 对齐**：已将 `DATABASE_URL` 切换为 `postgresql+psycopg2://...` 并重启 `cloudchat`。
 * **Schema 文件**：`/opt/cloudchat/schema.sql`
@@ -346,32 +317,25 @@
   * `sessions`: `session_id` 唯一；`idx_sessions_user`、`idx_sessions_expires`
 * **冒烟插入**：已插入 `users(uid='smoke-0001', email='smoke@test.local')` 并成功查询到记录。
 
----
-
-### 6.5 后端认证 Blueprint（已部署）
+### 后端认证
 
 * **应用路由前缀**：`/auth`（Blueprint）；经 Nginx 统一前缀 `/cloudchat/` 反代后，对外为 **`/cloudchat/auth/*`**。
 * **已实现端点**：
-
   * `POST /cloudchat/auth/register`
   * `POST /cloudchat/auth/login`
   * `POST /cloudchat/auth/logout`
   * `GET  /cloudchat/auth/me`
   * `GET  /cloudchat/auth/healthz`
 * **会话 Cookie**：
-
   * 名称：`cc_auth`（可通过环境变量 `AUTH_COOKIE_NAME` 配置；默认 `cc_auth`）。
   * 属性：`HttpOnly; SameSite=Lax; Secure=<由 COOKIE_SECURE 控制>`，`Max-Age=<SESSION_TTL_SECONDS 默认 604800>`；`Path=/`。
 * **限速**：：登录按 *IP* 与 *identifier* 双维度，`10/10min`（Redis 计数）。
 * **依赖**：Redis（会话与限速）。
 * **验证结果**：已完成端到端注册/登录/登出/鉴权，本地（Ubuntu）与外网域名均通过；重复注册返回 `409`。
 
----
-
-### 6.6 密码找回与重置（已部署）
+### 密码找回与重置
 
 * **端点**：
-
   * `POST /cloudchat/auth/password/forgot`（统一返回 200，防枚举；开发期可返回 `debug_token`）
   * `POST /cloudchat/auth/password/reset`（一次性 token 校验 + 更新密码）
 * **实现**：Redis 存储一次性 token（键：`pwreset:<token>`），默认 **TTL 900s**；重置成功后可选**强制下线**。
@@ -384,28 +348,24 @@
   * `PWRESET_REVOKE_SESSIONS`（是否在重置后强制下线，默认 `1`）
 * **邮件**：已提供 `mailer.py` 适配器；生产时将 `DEBUG_RETURN_RESET_TOKEN=0`，并配置 `SMTP_*`、`MAIL_FROM`、`FRONTEND_BASE_URL`（重置链接示例：`https://<域名>/cloudchat/reset-password?token=...`）。
 
----
+### 生产邮件发送
 
-### 6.7 生产邮件发送（已启用：Aliyun DirectMail）
+已启用：Aliyun DirectMail
 
 * **发送方式**：后端通过 `mailer.py` 使用 SMTP（推荐 STARTTLS/80，或 SSL/465）。
 * **所需环境变量**（`/etc/cloudchat/cloudchat.env`）：
-
   * `SMTP_HOST`、`SMTP_PORT`、`SMTP_USER`、`SMTP_PASS`、`SMTP_TLS`
   * `MAIL_FROM`、`MAIL_SENDER_NAME`
   * `FRONTEND_BASE_URL`
   * `DEBUG_RETURN_RESET_TOKEN=0`（生产关闭返回 token）
 * **DirectMail 区域入口**：
-
   * 新加坡：`smtpdm-ap-southeast-1.aliyuncs.com`（建议端口 **80** + STARTTLS）
   * 杭州（中国内地）：`smtpdm.aliyun.com`（若在内地网络）
 * **DNS（已完成）**：TXT 所有权、SPF、MX、跟踪 CNAME、DKIM、DMARC 已配置并通过验证。
 * **验证结果**：`/cloudchat/auth/password/forgot` 触发后，收件箱已收到带重置链接（15 分钟有效）的邮件。
 * **回滚**：把 `DEBUG_RETURN_RESET_TOKEN=1`，注释 `SMTP_*`，重启 `cloudchat`。
 
----
-
-### 6.8 后端接口清单与契约（当前版）
+### 后端接口清单与契约
 
 > 统一前缀：对内 `/auth/*`；对外经 Nginx 为 `/cloudchat/auth/*`
 
@@ -417,27 +377,15 @@
 | `/cloudchat/auth/me`              | GET  | Cookie `cc_auth`                              | `{ ok:true, user:{...} }`                 | 200, 401      | 用户字段：id/uid/email/phone/display\_name/is\_active |
 | `/cloudchat/auth/password/forgot` | POST | `{ identifier }`                              | `{ ok:true }`                             | 200           | 生产不返回 token；限速：IP 20/h、identifier 5/h            |
 | `/cloudchat/auth/password/reset`  | POST | `{ token, password }`                         | `{ ok:true, revoked_sessions:n }`         | 200, 400      | 一次性 token；重置后会话强制下线（简单版）                         |
-| `/cloudchat/auth/healthz`         | GET  | -                                             | `{ ok:true }`                             | 200/503       | 依赖探测（Redis）                                      |
+| `/cloudchat/auth/healthz`         | GET  | -                                             | `{ ok:true }`                             | 200/503       | 依赖探测（Redis）                                    |
 
 * **Cookie**：`cc_auth`（认证，会话 Redis 保存 `sess:<sid> -> user_id`，`Max-Age=604800`，`HttpOnly; SameSite=Lax; Secure=<按环境>`）；`cc_app`（Flask-Session）。
 * **错误格式**：`{ ok:false, error:"..." }`。
 * **跨域/凭据**：同域部署，前端请求需携带 `credentials: 'include'`。
 
-### 6.9 后端代码审计与修改建议（待应用）
-
-1. **注册限速**：为 `/auth/register` 增加限速（IP 10/小时；email 3/小时），防撞库与滥用。
-2. **密码强度**：注册/重置统一使用最小复杂度校验（≥8 且至少包含 2 类字符：字母/数字/特殊）。
-3. **健康检查增强**：`/auth/healthz` 同时探测 PostgreSQL（`select 1`）；当前仅 Redis。
-4. **Argon2 哈希升级**：登录成功后 `ph.check_needs_rehash()` 时后台平滑更新哈希。
-5. **生产缓存控制**：认证相关响应头加 `Cache-Control: no-store`（或在 Nginx 针对 `/cloudchat/auth/*` 设定）。
-6. **APScheduler**：当前每个 Gunicorn worker 启动 1 个调度器，建议改为 systemd 定时器/cron，避免多实例重复执行。
-7. **ORM 与 schema 对齐**（非阻塞）：`models.Session.ip` 类型与 `schema.sql`（INET）不一致；时间戳默认建议用 `func.now()` 或 UTC-aware `datetime.now(timezone.utc)`。
-
-> 以上修改未影响现网协议；落实后请在“变更记录”追加条目，并把本段落标记为“（已完成）”。
-
 ---
 
-## 7. 记录：Nginx 站点与 API 路由
+## Nginx 站点与 API 路由
 
 * **前端前缀**：`/cloudchat/`
 * **后端路由**（示例）：
@@ -455,7 +403,7 @@
 
 ---
 
-## 8. 日志与监控
+## 日志与监控
 
 * **journald**：大小与保留期限制：`<e.g. SystemMaxUse=..., MaxFileSec=...>`
 * **Nginx**：`/var/log/nginx/access.log`, `error.log`
@@ -471,7 +419,7 @@
 
 ---
 
-## 9. 安全基线
+## 安全基线
 
 * **防火墙**：开放 80/443/22；PostgreSQL/ PgBouncer 仅本机
 * **SSH 加固**：禁用 root 直登（或强制密钥）、`PasswordAuthentication no`
@@ -480,7 +428,7 @@
 
 ---
 
-## 10. 备份与恢复
+## 备份与恢复
 
 * **PostgreSQL**：每日 `pg_dump`（保留 7–14 天），每周全量，每日增量（如用 `wal-g` 可选）
 * **配置备份**：`/etc`、`/opt/cloudchat` 关键文件纳入 Git/压缩包
@@ -488,7 +436,7 @@
 
 ---
 
-## 11. 运维常用清单（Cheat Sheet）
+## 运维常用清单
 
 ```bash
 # 检查服务
@@ -511,7 +459,7 @@ free -h; vmstat 1 5; systemd-cgtop
 
 ---
 
-## 12. 变更记录（Changelog）
+## 变更记录
 
 | 日期         | 变更内容                                                                                                          | 服务           | 版本/提交     | 操作人 | 回滚方式                |                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------- | ------------ | --------- | --- | ------------------- | ------------------- |
@@ -531,16 +479,11 @@ free -h; vmstat 1 5; systemd-cgtop
 | 2025-08-13 | Cookie 命名冲突消解：认证 Cookie 改为 `cc_auth`；Flask-Session Cookie `cc_app`                                            | cloudchat    |           |     | 恢复旧名并重启             |                     |
 | 2025-08-13 | 部署密码找回与重置（Redis token，TTL=900s；接口 \`/auth/password/forgot                                                     | reset\`）     | cloudchat |     |                     | 移除路由/清理 Redis token |
 | 2025-08-13 | 启用重置后会话强制下线（简单版）扫描 `sess:*`；本次验证 `revoked_sessions=7`                                                         | cloudchat    |           |     | 关闭功能位或恢复旧逻辑         |                     |
-| 2025-08-13 | **DirectMail SMTP 上线**（新加坡入口 `smtpdm-ap-southeast-1.aliyuncs.com:80` + STARTTLS；`DEBUG_RETURN_RESET_TOKEN=0`） | cloudchat    |           |     | 关闭 SMTP 或回滚到调试模式    |                     |
-
----
-
-## 13. 待办（Next Actions）
-
-* [ ] **启用真实邮件发送**：填写 `SMTP_*`、`MAIL_FROM`、`MAIL_SENDER_NAME`、`FRONTEND_BASE_URL`；将 `DEBUG_RETURN_RESET_TOKEN=0`；`systemctl restart cloudchat`
-* [ ] **前端重置页面**：在前端实现 `/cloudchat/reset-password` 页面（读 `?token=`，提交到 `/cloudchat/auth/password/reset`）
-* [ ] **DNS 记录**：为发信域配置 SPF/DKIM/DMARC（SPF 选择 provider include 或服务器 IP；DKIM 2048-bit；DMARC 建议 `p=quarantine` 起步）
-* [ ] **投递验证**：向多个不同域的收件箱测试（Gmail/Outlook/QQ 等），观测到达率、是否进垃圾箱
-* [ ] **日志与告警**：为邮件发送失败打点并在 `journalctl` 中记录错误（mailer.py 已捕捉异常）；必要时加重试
-* [ ] **安全复核**：生产保持 `COOKIE_SECURE=1`、HSTS 开启；接口限速阈值复核
-* [ ] **（可选）优化会话吊销**：引入 `user_sess:<uid>` 反向索引，避免扫描 `sess:*`，提升重置时下线效率
+| 2025-08-13 | DirectMail SMTP 上线（新加坡入口 `smtpdm-ap-southeast-1.aliyuncs.com:80` + STARTTLS；`DEBUG_RETURN_RESET_TOKEN=0`） | cloudchat    |           |     | 关闭 SMTP 或回滚到调试模式    |                     |
+| 2025-08-13 | 为 `/auth/register` 增加 IP(10/小时) 和 Email(3/小时) 限速，防止撞库滥用                                             | cloudchat    |           |     | 移除限速配置并重启服务      |                     |
+| 2025-08-13 | 统一注册/重置密码复杂度校验（≥8 且至少 2 类字符：字母/数字/特殊）                                                     | cloudchat    |           |     | 恢复旧校验逻辑或删除代码     |                     |
+| 2025-08-13 | `/auth/healthz` 接口新增 PostgreSQL 健康探测（`select 1`）                                                         | cloudchat    |           |     | 移除 PostgreSQL 检查并重启  |                     |
+| 2025-08-13 | 登录成功后通过 `ph.check_needs_rehash()` 后台平滑升级 Argon2 哈希                                                   | cloudchat    |           |     | 停用后台更新或回滚代码       |                     |
+| 2025-08-13 | 认证相关响应头增加 `Cache-Control: no-store`（或 Nginx 针对 `/cloudchat/auth/*` 配置）                             | cloudchat/Nginx |           |     | 移除响应头或还原 Nginx 配置  |                     |
+| 2025-08-13 | 新增 `ENABLE_SCHEDULER` 环境变量，为 0 则 Gunicorn worker 的 APScheduler 关闭；生产环境为 0，避免多实例重复执行      | cloudchat    |           |     | 恢复 Gunicorn 调度器配置     |                     |
+| 2025-08-13 | 修正 `models.Session.ip` 类型与 `schema.sql` 对齐（INET），时间戳默认改用 `func.now()` 或 UTC-aware 时间             | cloudchat    |           |     | 恢复旧字段类型和默认值       |                     |
