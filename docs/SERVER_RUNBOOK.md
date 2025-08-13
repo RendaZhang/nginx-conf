@@ -29,13 +29,16 @@
 
 # 服务器配置运行手册
 
-> 适用：Ubuntu 24.04（小内存 1 GiB 级别），Nginx + Flask（Gunicorn/ gevent）+ Redis；**规划**引入 PgBouncer + PostgreSQL。&#x20;
->
-> 本文档用于**记录当前配置**、**目标配置**与**变更记录**，并作为运维 Runbook。
+- **作者**: 张人大 (Renda Zhang)
+- **最后更新**: August 13, 2025, 20:26 (UTC+08:00)
 
 ---
 
 ## 概览
+
+> 适用：Ubuntu 24.04（小内存 1 GiB 级别），Nginx + Flask（Gunicorn/ gevent）+ Redis；**规划**引入 PgBouncer + PostgreSQL。&#x20;
+>
+> 本文档用于**记录当前配置**、**目标配置**与**变更记录**，并作为运维 Runbook。
 
 - **主机名**：`iZj6c1i25mt610l0q2g2amZ`
 - **云厂商 / 地域**：`阿里云 / cn-hongkong`
@@ -43,13 +46,19 @@
 - **操作系统**：Ubuntu Server 24.04 LTS
 - **时区 / NTP**：`<Asia/Shanghai>` / `chrony`
 - **交换空间（Swap）**：启用，大小 **2 GiB**
-- **当前内存快照**（引入 PgBouncer + PostgreSQL 前的执行时记录）：
-  ```
-  Mem:  total 690Mi | used 357Mi | free 88Mi | buff/cache 362Mi | available 333Mi
-  Swap: total 2.0Gi | used 198Mi | free 1.8Gi
-  ```
-- **系统精简与优化**（已实施）：
-  - journald **日志大小/生存时间限制**（已配置）
+- **内存快照**
+  - 引入 PgBouncer + PostgreSQL 前的记录：
+    ```bash
+    Mem:  total 690Mi | used 357Mi | free 88Mi | buff/cache 362Mi | available 333Mi
+    Swap: total 2.0Gi | used 198Mi | free 1.8Gi
+    ```
+  - 引入完成并调整了 systemd 配置后的记录：
+    ```bash
+    Mem:  total 690Mi | used 448Mi | free 47Mi | buff/cache 315Mi | available 242Mi
+    Swap: total 2.0Gi | used 99Mi | free 1.9Gi
+    ```
+- **系统精简与优化**：
+  - journald **日志大小/生存时间限制**
   - **内核参数**调优（sysctl）
   - **轻量化组件替换**以降低常驻内存
 

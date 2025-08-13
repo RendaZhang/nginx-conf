@@ -33,8 +33,8 @@
 
 # Nginx Configuration for rendazhang.com
 
-- **Last Updated:** July 31, 2025, 10:58 (UTC+8)
-- **作者:** 张人大（Renda Zhang）
+- **作者**: 张人大 (Renda Zhang)
+- **最后更新**: August 13, 2025, 20:26 (UTC+08:00)
 
 ---
 
@@ -46,7 +46,7 @@
 
 当前示例以 **Ubuntu 24.04 LTS** 为主，关于旧版 CentOS 7 的迁移细节请参阅 📄 [迁移指南](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)。
 
-更多运维细节请查阅 📄 [服务器配置运行手册](docs/SERVER_RUNBOOK.md)。
+更多运维细节请查阅 📄 [服务器配置运行手册](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SERVER_RUNBOOK.md#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8C)。
 
 > 重量级解决方案可参考我的云原生项目：📁 [Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
