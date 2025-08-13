@@ -47,8 +47,8 @@
 
 # 迁移指南
 
-* **Last Updated:** July 31, 2025, 10:58 (UTC+8)
-* **作者:** 张人大（Renda Zhang）
+- **Last Updated:** July 31, 2025, 10:58 (UTC+8)
+- **作者:** 张人大（Renda Zhang）
 
 ---
 
@@ -76,9 +76,9 @@
 
 #### 基础信息
 
-* 操作系统: Ubuntu 24.04 LTS
-* 地区: 香港
-* ISP: 阿里云
+- 操作系统: Ubuntu 24.04 LTS
+- 地区: 香港
+- ISP: 阿里云
 
 参考命令：
 
@@ -854,7 +854,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart nginx
 ```
 
-* 备选方案：如果上述方法失败，可以尝试完整源码编译。
+- 备选方案：如果上述方法失败，可以尝试完整源码编译。
 
 #### 目录与用户约定
 
@@ -1040,5 +1040,5 @@ journalctl -u cloudchat.service -f
 
 ### 检查前端
 
-* 访问 `http://www.rendazhang.com` 应自动跳转至 `https://www.rendazhang.com`
-* 检查各功能页面，比如通过浏览器访问主页面，使用与 AI 聊天的功能看看有没有问题。
+- 访问 `http://www.rendazhang.com` 应自动跳转至 `https://www.rendazhang.com`
+- 检查各功能页面，比如通过浏览器访问主页面，使用与 AI 聊天的功能看看有没有问题。

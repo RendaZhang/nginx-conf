@@ -35,8 +35,8 @@
 
 # 服务器安全事件响应报告：恶意攻击分析与加固措施
 
-* **Last Updated:** July 31, 2025, 09:36 (UTC+8)
-* **作者:** 张人大（Renda Zhang）
+- **Last Updated:** July 31, 2025, 09:36 (UTC+8)
+- **作者:** 张人大（Renda Zhang）
 
 ---
 

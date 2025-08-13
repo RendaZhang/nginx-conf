@@ -20,8 +20,8 @@
 
 # NGINX Troubleshooting Guide
 
-* **Last Updated:** July 18, 2025, 03:00 (UTC+8)
-* **作者:** 张人大（Renda Zhang）
+- **Last Updated:** July 18, 2025, 03:00 (UTC+8)
+- **作者:** 张人大（Renda Zhang）
 
 ---
 

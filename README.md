@@ -23,6 +23,7 @@
     - [迁移指南](#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)
     - [小内存服务器指南](#%E5%B0%8F%E5%86%85%E5%AD%98%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%8C%87%E5%8D%97)
     - [故障排查指南](#%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E6%8C%87%E5%8D%97)
+    - [服务器配置运行手册](#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8C)
     - [服务器安全报告](#%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%89%E5%85%A8%E6%8A%A5%E5%91%8A)
   - [🤝 贡献指南](#-%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97)
   - [🔐 License](#-license)
@@ -32,8 +33,8 @@
 
 # Nginx Configuration for rendazhang.com
 
-* **Last Updated:** July 31, 2025, 10:58 (UTC+8)
-* **作者:** 张人大（Renda Zhang）
+- **Last Updated:** July 31, 2025, 10:58 (UTC+8)
+- **作者:** 张人大（Renda Zhang）
 
 ---
 
@@ -44,6 +45,8 @@
 这些配置文件针对生产环境优化，支持 HTTPS、反向代理和安全防护措施，并具备较强的通用性，可在多种操作系统上使用。
 
 当前示例以 **Ubuntu 24.04 LTS** 为主，关于旧版 CentOS 7 的迁移细节请参阅 📄 [迁移指南](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#%E8%BF%81%E7%A7%BB%E6%8C%87%E5%8D%97)。
+
+更多运维细节请查阅 📄 [服务器配置运行手册](docs/SERVER_RUNBOOK.md)。
 
 > 重量级解决方案可参考我的云原生项目：📁 [Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
@@ -233,6 +236,10 @@ graph TD
 
 📄 [NGINX Troubleshooting Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/TROUBLESHOOTING.md#nginx-troubleshooting-guide)
 
+### 服务器配置运行手册
+
+📄 [Server Runbook](docs/SERVER_RUNBOOK.md)
+
 ### 服务器安全报告
 
 📄 [Server Security Report](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SERVER_SECURITY_REPORT.md#%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%AE%89%E5%85%A8%E4%BA%8B%E4%BB%B6%E5%93%8D%E5%BA%94%E6%8A%A5%E5%91%8A%E6%81%B6%E6%84%8F%E6%94%BB%E5%87%BB%E5%88%86%E6%9E%90%E4%B8%8E%E5%8A%A0%E5%9B%BA%E6%8E%A5%E6%96%BD)
@@ -272,7 +279,7 @@ graph TD
 
 ## 📬 联系方式
 
-* 联系人：张人大（Renda Zhang）
-* 📧 邮箱：[952402967@qq.com](mailto:952402967@qq.com)
+- 联系人：张人大（Renda Zhang）
+- 📧 邮箱：[952402967@qq.com](mailto:952402967@qq.com)
 
 > ⏰ **Maintainer**：@Renda — 如果本项目对你有帮助，请不要忘了点亮 ⭐️ Star 支持我们！
