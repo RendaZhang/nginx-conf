@@ -11,6 +11,7 @@
     - [问题状态](#%E9%97%AE%E9%A2%98%E7%8A%B6%E6%80%81)
   - [[2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败](#2026-06-12-tls-12-%E5%9C%A8-ecdsa-%E8%AF%81%E4%B9%A6%E4%B8%8B%E6%8F%A1%E6%89%8B%E5%A4%B1%E8%B4%A5)
   - [[2026-06-12] 静态页面和资源缺少安全响应头](#2026-06-12-%E9%9D%99%E6%80%81%E9%A1%B5%E9%9D%A2%E5%92%8C%E8%B5%84%E6%BA%90%E7%BC%BA%E5%B0%91%E5%AE%89%E5%85%A8%E5%93%8D%E5%BA%94%E5%A4%B4)
+  - [[2026-06-12] Astro hydration inline scripts 被 CSP 拦截](#2026-06-12-astro-hydration-inline-scripts-%E8%A2%AB-csp-%E6%8B%A6%E6%88%AA)
   - [[2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖](#2026-06-12-_astro-%E9%95%BF%E7%BC%93%E5%AD%98%E8%A2%AB%E9%80%9A%E7%94%A8%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E8%A7%84%E5%88%99%E8%A6%86%E7%9B%96)
   - [[2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化](#2026-06-12-%E9%9A%90%E8%97%8F%E6%95%8F%E6%84%9F%E8%B7%AF%E5%BE%84%E5%9B%9E%E9%80%80%E9%A6%96%E9%A1%B5%E4%B8%94-apex-%E5%9F%9F%E5%90%8D%E6%9C%AA%E8%A7%84%E8%8C%83%E5%8C%96)
   - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
@@ -25,7 +26,7 @@
 # NGINX Troubleshooting Guide
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 12, 2026, 22:30 (UTC+08:00)
+- **最后更新**: June 12, 2026, 23:42 (UTC+08:00)
 
 ---
 
@@ -89,6 +90,7 @@
 - [x] [2025-07-31] pre-commit 添加换行导致 Nginx 模块软链接损坏
 - [x] [2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败
 - [x] [2026-06-12] 静态页面和资源缺少安全响应头
+- [x] [2026-06-12] Astro hydration inline scripts 被 CSP 拦截
 - [x] [2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖
 - [x] [2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化
 
@@ -158,6 +160,60 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -t
 - 新增 `snippets/security-headers.conf`，集中维护 HSTS、CSP、X-Content-Type-Options、X-Frame-Options、Referrer-Policy。
 - 所有带 `add_header` 的 public location 显式 `include snippets/security-headers.conf;`。
 - 新增或调整 location 时必须检查是否声明了 `add_header`，若声明则同步 include 安全头 snippet。
+
+---
+
+## [2026-06-12] Astro hydration inline scripts 被 CSP 拦截
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 前端构建：Astro 5.12.8 + React，静态文件由 Nginx 提供
+- 相关模块：`Content-Security-Policy`、Astro partial hydration
+
+**症状 (Symptoms)**
+
+- 浏览器访问 `https://rendazhang.com/` 或 `https://www.rendazhang.com/` 后，Console 报错：
+
+```text
+Executing inline script violates the following Content Security Policy directive 'script-src ...'
+```
+
+- 报错中出现 `sha256-QzWF...`、`sha256-U7a...`、`sha256-Q2BP...` 等 inline script hash。
+- 页面 HTML 可正常返回，但 React/Astro hydration 相关交互脚本被浏览器阻止执行。
+
+**排查过程 (Diagnosis)**
+
+1. 检查线上响应头，确认 `script-src` 仅允许 `'self'`、Credly、Sentry 等外部来源，没有 inline script hash、nonce 或 `unsafe-inline`。
+2. 下载首页、`/deepseek_chat/`、`/login/`、`/docs/` HTML，计算所有可执行 inline script 的 SHA-256。
+3. 报错 hash 与 Astro 自动注入的 hydration runtime inline scripts 匹配；`application/ld+json` 是结构化数据脚本，不是本次 console 报错来源。
+4. 复核前端源码：`/js/base-layout-init.js` 已外置，但 Astro 5.12 仍会为 `client:load`、`client:visible` 等 hydration 指令注入 runtime inline scripts。
+
+**根因 (Root Cause)**
+
+Nginx CSP 收紧后，`script-src` 未包含 Astro 5.12 生产构建生成的 hydration inline script hash。浏览器按 CSP 阻止这些脚本执行。
+
+**解决方案 (Fix)**
+
+- 在 `snippets/security-headers.conf` 的单行 `Content-Security-Policy` 中为 `script-src` 增加当前生产构建所需的 SHA-256 hash allowlist：
+
+```text
+'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c='
+'sha256-U7a72oKuFFz8D7GUHLA1NZ0ciymHmDOc9T9aVDg2rWU='
+'sha256-Q2BPg90ZMplYY+FSdApNErhpWafg2hcRRbndmvxuL/Q='
+'sha256-UHe1meAWRK+8Zoz3TfFBwXdJLXzDSA1GuEs8oRqxVt8='
+'sha256-9PM+iIXt2xgJUXAwbq9LGlzgU9Wqrfd7/UpLbzfA+Tk='
+```
+
+- 不启用 `unsafe-inline`，避免扩大 CSP 执行面。
+- 保持 CSP header 单行，避免再次触发 HTTP/2 header 编码问题。
+
+**经验总结 (Lessons Learned)**
+
+- 前端重新构建、升级 Astro、调整 hydration 指令或新增 inline script 后，应重新抓取生产 HTML 并复核 hash。
+- 中长期可评估 Astro 6 的 `security.csp` 原生能力，减少手工维护 Nginx hash allowlist。
+- CSP 变更上线后需用浏览器 Console 验收，`curl` 只能确认 header，不能证明页面脚本实际可执行。
 
 ---
 

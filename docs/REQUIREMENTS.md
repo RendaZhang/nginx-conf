@@ -16,7 +16,7 @@
 # 项目需求清单
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 12, 2026, 23:10 (UTC+08:00)
+- **最后更新**: June 12, 2026, 23:42 (UTC+08:00)
 
 ---
 
@@ -54,6 +54,7 @@
 - [x] 修复 `/.env`、`/.env.local` 等隐藏敏感探测路径回退首页 200：隐藏文件默认 404，保留 `/.well-known/`
 - [x] 修复 apex 域名直接 200：`https://rendazhang.com/*` 统一 301 到 `https://www.rendazhang.com/*`
 - [x] 明确 `ip-blacklist.conf` 为服务器本地运行态配置：从 Git 索引移除并加入 `.gitignore`，避免 Git 发布覆盖黑名单
+- [x] 修复 Astro hydration inline scripts 被 CSP 拦截：`script-src` 使用当前生产构建 SHA-256 hash allowlist，不启用 `unsafe-inline`
 - [ ] 集成压力测试场景（如 `siege -c 50`）到 CI 流程
 - [ ] 文档内提供 Docker 化部署示例
 
@@ -69,12 +70,14 @@
 - [x] **敏感探测路径返回首页 200**：`/.env`、`/.env.local` 等隐藏路径被 SPA fallback 命中；已增加隐藏文件 404 规则，同时保留 `/.well-known/`。
 - [x] **apex 域名未规范化**：`https://rendazhang.com/` 直接 200；已增加 apex HTTPS server，统一 301 到 www canonical host。
 - [x] **`ip-blacklist.conf` 被 Git 跟踪且服务器存在大量本地变更**：黑名单属于服务器本地运行态配置；已改为 Git ignore，并要求 Nginx 配置发布走 commit/push + 服务器 `git pull --ff-only`。
+- [x] **Astro hydration inline scripts 被 CSP 拦截**：首页、`/deepseek_chat/`、`/login/`、`/docs/` 的 Astro inline runtime hash 已加入 `script-src`，保持不使用 `unsafe-inline`。
 
 ### 后续加固
 
 - [ ] SSH 当前允许 `PermitRootLogin yes` 与 `PasswordAuthentication yes`，需创建非 root 管理用户并切换为密钥登录。
 - [ ] `cloudchat.service` 当前以 root 运行且 Gunicorn 绑定 `0.0.0.0:5000`，需迁移到低权限用户并绑定 `127.0.0.1:5000`。
 - [ ] 主机防火墙 `ufw` 当前 inactive，虽云安全组阻断了部分公网端口，仍需在主机层限制非必要端口。
+- [ ] 前端升级 Astro 或 GitHub Actions 重新构建后，需复核 inline script hash 是否变化；中长期可评估 Astro 6 `security.csp` 原生配置。
 - [ ] 定期巡检证书有效期、`certbot.timer`、安全头覆盖、`/_astro/` 长缓存、敏感路径 404 和 `/cloudchat/auth/healthz`。
 
 ---

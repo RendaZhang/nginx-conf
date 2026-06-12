@@ -34,7 +34,7 @@
 # Nginx Configuration for rendazhang.com
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 12, 2026, 22:30 (UTC+08:00)
+- **最后更新**: June 12, 2026, 23:42 (UTC+08:00)
 
 ---
 
@@ -143,6 +143,7 @@ graph TD
   - 每个客户端限速配置：`limit_req_zone` 定义 `flask_limit`，5 r/s
 - **安全措施**:
   - `Strict-Transport-Security` 和 `Content-Security-Policy` 安全头通过 `snippets/security-headers.conf` 集中维护
+  - Astro 5.12 生产构建会注入 hydration inline scripts，`script-src` 使用 SHA-256 hash allowlist 放行当前生产构建，不使用 `unsafe-inline`
   - Nginx 中只要某个 location 自己声明了 `add_header`，就需要显式 include 安全头 snippet，避免继承失效
   - 阻止访问 `.git`, `.gitignore`, `.env*`, `package.json` 等敏感文件，同时保留 `/.well-known/` 标准路径
   - 启用 Fail2Ban 服务，根据日志自动封禁暴力破解与异常请求
