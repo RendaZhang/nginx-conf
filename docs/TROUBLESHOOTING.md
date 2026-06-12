@@ -9,6 +9,10 @@
     - [使用建议](#%E4%BD%BF%E7%94%A8%E5%BB%BA%E8%AE%AE)
     - [BUG 记录格式要求](#bug-%E8%AE%B0%E5%BD%95%E6%A0%BC%E5%BC%8F%E8%A6%81%E6%B1%82)
     - [问题状态](#%E9%97%AE%E9%A2%98%E7%8A%B6%E6%80%81)
+  - [[2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败](#2026-06-12-tls-12-%E5%9C%A8-ecdsa-%E8%AF%81%E4%B9%A6%E4%B8%8B%E6%8F%A1%E6%89%8B%E5%A4%B1%E8%B4%A5)
+  - [[2026-06-12] 静态页面和资源缺少安全响应头](#2026-06-12-%E9%9D%99%E6%80%81%E9%A1%B5%E9%9D%A2%E5%92%8C%E8%B5%84%E6%BA%90%E7%BC%BA%E5%B0%91%E5%AE%89%E5%85%A8%E5%93%8D%E5%BA%94%E5%A4%B4)
+  - [[2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖](#2026-06-12-_astro-%E9%95%BF%E7%BC%93%E5%AD%98%E8%A2%AB%E9%80%9A%E7%94%A8%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E8%A7%84%E5%88%99%E8%A6%86%E7%9B%96)
+  - [[2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化](#2026-06-12-%E9%9A%90%E8%97%8F%E6%95%8F%E6%84%9F%E8%B7%AF%E5%BE%84%E5%9B%9E%E9%80%80%E9%A6%96%E9%A1%B5%E4%B8%94-apex-%E5%9F%9F%E5%90%8D%E6%9C%AA%E8%A7%84%E8%8C%83%E5%8C%96)
   - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
   - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
   - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
@@ -21,7 +25,7 @@
 # NGINX Troubleshooting Guide
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: July 18, 2025, 03:00 (UTC+08:00)
+- **最后更新**: June 12, 2026, 22:30 (UTC+08:00)
 
 ---
 
@@ -83,6 +87,138 @@
 - [x] [2025-07-10] `proxy_cache_purge` 始终 404
 - [x] [2025-07-13] `proxy_cache_purge` 返回 "Empty reply" 错误
 - [x] [2025-07-31] pre-commit 添加换行导致 Nginx 模块软链接损坏
+- [x] [2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败
+- [x] [2026-06-12] 静态页面和资源缺少安全响应头
+- [x] [2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖
+- [x] [2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化
+
+---
+
+## [2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 相关模块：OpenSSL 3.0、Certbot、TLS
+
+**症状 (Symptoms)**
+
+- `ssl_protocols` 已声明 `TLSv1.2 TLSv1.3`。
+- `openssl s_client -tls1_3` 握手成功，`openssl s_client -tls1_2` 返回 handshake failure。
+
+**排查过程 (Diagnosis)**
+
+1. 检查证书发现 `Public Key Algorithm: id-ecPublicKey`，签名算法为 `ecdsa-with-SHA384`。
+2. 检查旧 `ssl_ciphers`，仅包含 `ECDHE-RSA-*` TLS 1.2 套件。
+3. TLS 1.3 不受 `ssl_ciphers` 控制，因此 TLS 1.3 正常，TLS 1.2 没有可用 ECDSA 套件。
+
+**根因 (Root Cause)**
+
+ECDSA 证书不能使用仅 RSA 的 TLS 1.2 cipher 列表完成协商。
+
+**解决方案 (Fix)**
+
+- 将证书、协议和 cipher 抽取到 `snippets/ssl-rendazhang.conf`。
+- TLS 1.2 cipher 同时包含 `ECDHE-ECDSA-*` 与 `ECDHE-RSA-*`，保留 TLS 1.3 默认 cipher 行为。
+- 变更后用以下命令验收：
+
+```bash
+echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -tls1_2 -brief
+echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -tls1_3 -brief
+```
+
+---
+
+## [2026-06-12] 静态页面和资源缺少安全响应头
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 相关模块：`add_header`
+
+**症状 (Symptoms)**
+
+- `/cloudchat/auth/healthz` 返回 HSTS/CSP/X-Frame-Options 等安全头。
+- 首页、`/deepseek_chat/`、`/sitemap.xml`、`/_astro/*.css` 缺少部分安全头。
+
+**排查过程 (Diagnosis)**
+
+1. server 级配置已有安全头。
+2. HTML/XML/JSON、`/_astro/`、通用静态资源 location 内部又声明了 `add_header Cache-Control` 或 `Last-Modified`。
+3. Nginx 中子级 block 一旦声明 `add_header`，不会继续继承父级 `add_header`。
+
+**根因 (Root Cause)**
+
+安全头只在 server 级声明，带有自定义 `add_header` 的 location 覆盖了继承链。
+
+**解决方案 (Fix)**
+
+- 新增 `snippets/security-headers.conf`，集中维护 HSTS、CSP、X-Content-Type-Options、X-Frame-Options、Referrer-Policy。
+- 所有带 `add_header` 的 public location 显式 `include snippets/security-headers.conf;`。
+- 新增或调整 location 时必须检查是否声明了 `add_header`，若声明则同步 include 安全头 snippet。
+
+---
+
+## [2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 相关模块：location 匹配、静态缓存
+
+**症状 (Symptoms)**
+
+- 预期 `/_astro/` 指纹文件缓存 365 天。
+- 实际 `/_astro/chat_widget...css` 返回 30 天缓存，并命中通用静态资源规则。
+
+**排查过程 (Diagnosis)**
+
+1. 配置中存在普通前缀 `location /_astro/`。
+2. 同时存在通用正则 `location ~* \.(css|js|...)$`。
+3. Nginx location 选择中，普通前缀匹配后仍会继续检查正则；正则命中后覆盖普通前缀。
+
+**根因 (Root Cause)**
+
+`/_astro/` 使用普通前缀 location，优先级低于后续命中的静态资源正则。
+
+**解决方案 (Fix)**
+
+- 将 `location /_astro/` 改为 `location ^~ /_astro/`。
+- `/_astro/` 只返回 `Cache-Control: public, max-age=31536000, immutable`，避免和 `expires` 产生重复缓存头。
+
+---
+
+## [2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 相关模块：SPA fallback、server_name
+
+**症状 (Symptoms)**
+
+- `https://www.rendazhang.com/.env` 和 `/.env.local` 返回首页 200。
+- `https://rendazhang.com/` 直接返回 200，但页面 canonical 指向 `https://www.rendazhang.com/`。
+
+**排查过程 (Diagnosis)**
+
+1. `location /` 使用 `try_files $uri $uri/ /index.html`，不存在的隐藏文件被回退到首页。
+2. 旧 HTTPS server 同时声明 `www.rendazhang.com rendazhang.com`，apex 和 www 使用同一内容响应。
+
+**根因 (Root Cause)**
+
+隐藏路径没有统一拦截规则；apex host 未拆成独立 canonical redirect server。
+
+**解决方案 (Fix)**
+
+- 增加 `location ~ /\.(?!well-known/) { return 404; }`，默认阻断隐藏文件访问。
+- 增加 `location ^~ /.well-known/`，保留标准验证/应用声明目录。
+- 将 apex HTTPS server 拆出，并 `return 301 https://www.rendazhang.com$request_uri;`。
+- HTTP 默认入口也统一跳转到 `https://www.rendazhang.com$request_uri`。
 
 ---
 

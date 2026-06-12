@@ -34,7 +34,7 @@
 # Nginx Configuration for rendazhang.com
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: August 13, 2025, 20:26 (UTC+08:00)
+- **最后更新**: June 12, 2026, 22:30 (UTC+08:00)
 
 ---
 
@@ -108,7 +108,7 @@ graph TD
 | `sites-enabled/` | 实际启用站点的软链接 |
 | `snippets/` | 可复用的配置片段 |
 
-> ⚠ **注意**: 证书目录 (`cert/`, `ssl/`) 和备份文件 (`backup/`) 等敏感 / 临时内容已通过 `.gitignore` 排除
+> ⚠ **注意**: 证书目录 (`cert/`, `ssl/`)、备份文件 (`backup/`)、IDE 配置 (`.idea/`) 与服务器本地黑名单 (`ip-blacklist.conf`) 已通过 `.gitignore` 排除
 
 ### 关键配置功能
 
@@ -116,12 +116,14 @@ graph TD
 
 - **网站根目录**: `/var/www/html`
 - **HTTP → HTTPS 重定向**:
-  - 所有 HTTP 请求 (端口 80) 自动重定向到 HTTPS (端口 443)
+  - 所有 HTTP 请求 (端口 80) 自动重定向到 canonical HTTPS 主机 `https://www.rendazhang.com`
+  - `https://rendazhang.com/*` 统一 301 到 `https://www.rendazhang.com/*`
 - **SSL 设置**:
   - 由 Certbot 自动管理
   - 证书: `/etc/letsencrypt/live/$DomainName/fullchain.pem`
   - 私钥: `/etc/letsencrypt/live/$DomainName/privkey.pem`
   - 禁用过时的 TLSv1/TLSv1.1 协议，只允许 TLSv1.2+
+  - 当前证书为 ECDSA，TLS 1.2 cipher 必须包含 `ECDHE-ECDSA-*`，否则 TLS 1.2 客户端无法完成握手
 - **代理与超时设置**：
   - `/cloudchat/` 路径代理到 `http://$BackendIP:$Port/`
   - `proxy_read_timeout` 设置需要跟 Gunicorn 的 `timeout` 设置对齐
@@ -135,15 +137,20 @@ graph TD
     - `$host`：主机名
     - `$request_uri`：路径
     - 缓存键示例：`wwww.rendazhang.com/cloudchat/test`
-  - 静态缓存目录是 `/tmp/nginx`（备用），当前配置主要使用 `expires 30d` 控制本地静态资源缓存。
-  - 指纹文件位于 `/_astro/` 目录，缓存时长 365 天，利用哈希文件名实现长期缓存。
+  - 通用静态资源使用 `Cache-Control: public, max-age=2592000, immutable` 控制 30 天缓存。
+  - 指纹文件位于 `/_astro/` 目录，使用 `location ^~ /_astro/` 避免被通用静态资源正则抢先匹配，缓存时长 365 天，利用哈希文件名实现长期缓存。
 - **限速与流量控制**：
   - 每个客户端限速配置：`limit_req_zone` 定义 `flask_limit`，5 r/s
 - **安全措施**:
-  - `Strict-Transport-Security` 和 `Content-Security-Policy` 安全头在虚拟主机内强制启用
-  - 阻止访问 `.git`, `.gitignore`, `package.json` 等敏感文件
+  - `Strict-Transport-Security` 和 `Content-Security-Policy` 安全头通过 `snippets/security-headers.conf` 集中维护
+  - Nginx 中只要某个 location 自己声明了 `add_header`，就需要显式 include 安全头 snippet，避免继承失效
+  - 阻止访问 `.git`, `.gitignore`, `.env*`, `package.json` 等敏感文件，同时保留 `/.well-known/` 标准路径
   - 启用 Fail2Ban 服务，根据日志自动封禁暴力破解与异常请求
-  - 维护 `ip-blacklist.conf`，结合 iptables/Nginx 规则屏蔽恶意 IP
+  - 维护 `ip-blacklist.conf`，结合 iptables/Nginx 规则屏蔽恶意 IP；该文件属于服务器本地运行态配置，不随 Git 仓库同步
+- **发布约定**：
+  - 本地修改 Nginx 配置后先 commit/push 到仓库，服务器在 `/etc/nginx` 执行 `git pull --ff-only` 拉取最新配置
+  - 每次拉取后必须执行 `nginx -t`，通过后再 `systemctl reload nginx`
+  - 不再直接覆盖整个 `/etc/nginx`，避免误覆盖 `ip-blacklist.conf`、证书、黑名单或服务器本地状态文件
 - **自定义错误页面**:
   - `404.html`
   - `50x.html`

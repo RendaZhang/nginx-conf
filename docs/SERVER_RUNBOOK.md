@@ -23,6 +23,7 @@
   - [安全基线](#%E5%AE%89%E5%85%A8%E5%9F%BA%E7%BA%BF)
   - [备份与恢复](#%E5%A4%87%E4%BB%BD%E4%B8%8E%E6%81%A2%E5%A4%8D)
   - [运维常用清单](#%E8%BF%90%E7%BB%B4%E5%B8%B8%E7%94%A8%E6%B8%85%E5%8D%95)
+    - [Nginx 安全与缓存验收](#nginx-%E5%AE%89%E5%85%A8%E4%B8%8E%E7%BC%93%E5%AD%98%E9%AA%8C%E6%94%B6)
   - [变更记录](#%E5%8F%98%E6%9B%B4%E8%AE%B0%E5%BD%95)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -30,7 +31,7 @@
 # 服务器配置运行手册
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: August 13, 2025, 20:26 (UTC+08:00)
+- **最后更新**: June 12, 2026, 22:30 (UTC+08:00)
 
 ---
 
@@ -85,7 +86,7 @@
 ```
 
 - **域名 / 站点**：`https://www.rendazhang.com`
-- **TLS 证书**：`issuer=C = US, O = Let's Encrypt, CN = E6`（自动续期工具：`certbot`）
+- **TLS 证书**：Let's Encrypt ECDSA 证书（自动续期工具：`certbot`）
 - **认证模型**：同域 **Cookie 会话**（HttpOnly/ Secure/ SameSite=Lax）
 
 ---
@@ -116,9 +117,17 @@ systemd + OOM
 - **反代要点**：
   - 统一前缀：`/cloudchat/` → 后端 `127.0.0.1:5000`
   - 关闭对 API 的缓存；开启 `proxy_http_version 1.1` 与必要的头传递
-- **TLS**：`<证书与私钥路径>`；自动续期任务：`<cron/timer>`
+- **TLS**：`/etc/letsencrypt/live/rendazhang.com/{fullchain.pem,privkey.pem}`；自动续期任务：`certbot.timer`
+- **TLS 1.2 兼容性**：当前证书为 ECDSA，`ssl_ciphers` 必须包含 `ECDHE-ECDSA-*`；TLS 1.3 cipher 不由 `ssl_ciphers` 控制。
+- **安全头**：通过 `snippets/security-headers.conf` 统一维护。凡是 location 内声明了 `add_header`，都要显式 include 该 snippet。
+- **Canonical host**：`rendazhang.com` 与所有 HTTP 请求统一 301 到 `https://www.rendazhang.com$request_uri`。
+- **静态缓存**：`location ^~ /_astro/` 返回一年 immutable 缓存；通用静态资源返回 30 天 immutable 缓存。
+- **敏感路径**：隐藏文件默认 404，保留 `/.well-known/` 标准路径。
+- **黑名单文件**：`/etc/nginx/ip-blacklist.conf` 是服务器本地运行态配置，已加入 `.gitignore`，不得通过 Git 发布覆盖。
+- **配置发布**：本地提交并 push 后，服务器在 `/etc/nginx` 执行 `git pull --ff-only`；禁止直接同步整个 `/etc/nginx`。
 - **常用命令**：
   ```bash
+  cd /etc/nginx && git pull --ff-only
   sudo nginx -t && sudo systemctl reload nginx
   journalctl -u nginx -e --no-pager
   ```
@@ -132,8 +141,8 @@ systemd + OOM
 >     root /var/www/html;
 >     index index.html;
 >
->     add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
->     add_header Content-Security-Policy "default-src 'self'" always;
+>     include snippets/ssl-rendazhang.conf;
+>     include snippets/security-headers.conf;
 >
 >     location /cloudchat/ { ... }  # 详见下文
 > }
@@ -487,6 +496,7 @@ systemd + OOM
 systemctl status nginx redis-server cloudchat pgbouncer postgresql --no-pager
 
 # 在线变更与重载
+cd /etc/nginx && git pull --ff-only
 sudo nginx -t && sudo systemctl reload nginx
 sudo systemctl restart cloudchat
 sudo systemctl restart redis-server
@@ -499,6 +509,23 @@ psql -h 127.0.0.1 -p 6432 pgbouncer -c "show pools;"
 
 # 内存/CPU 快照
 free -h; vmstat 1 5; systemd-cgtop
+```
+
+### Nginx 安全与缓存验收
+
+```bash
+# TLS 1.2 / TLS 1.3 都应成功
+echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -tls1_2 -brief
+echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -tls1_3 -brief
+
+# 静态页面、XML/JSON、指纹资源都应带安全头
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/sitemap.xml
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/_astro/chat_widget.CudJCDys.css
+
+# 敏感路径应为 404；apex 应 301 到 www
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/.env
+curl -k -I --resolve rendazhang.com:443:127.0.0.1 https://rendazhang.com/
 ```
 
 ---
@@ -531,3 +558,4 @@ free -h; vmstat 1 5; systemd-cgtop
 | 2025-08-13 | 认证相关响应头增加 `Cache-Control: no-store`（或 Nginx 针对 `/cloudchat/auth/*` 配置）                             | cloudchat/Nginx |           |     | 移除响应头或还原 Nginx 配置  |                     |
 | 2025-08-13 | 新增 `ENABLE_SCHEDULER` 环境变量，为 0 则 Gunicorn worker 的 APScheduler 关闭；生产环境为 0，避免多实例重复执行      | cloudchat    |           |     | 恢复 Gunicorn 调度器配置     |                     |
 | 2025-08-13 | 修正 `models.Session.ip` 类型与 `schema.sql` 对齐（INET），时间戳默认改用 `func.now()` 或 UTC-aware 时间             | cloudchat    |           |     | 恢复旧字段类型和默认值       |                     |
+| 2026-06-12 | 修复 TLS 1.2 ECDSA cipher、安全头继承、`/_astro/` 长缓存、隐藏敏感路径 404 与 apex 到 www 301，并改为 Git pull 发布流程 | nginx        |           |     | 回滚对应 Git commit 后 `nginx -t && systemctl reload nginx` | |
