@@ -12,6 +12,7 @@
   - [[2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败](#2026-06-12-tls-12-%E5%9C%A8-ecdsa-%E8%AF%81%E4%B9%A6%E4%B8%8B%E6%8F%A1%E6%89%8B%E5%A4%B1%E8%B4%A5)
   - [[2026-06-12] 静态页面和资源缺少安全响应头](#2026-06-12-%E9%9D%99%E6%80%81%E9%A1%B5%E9%9D%A2%E5%92%8C%E8%B5%84%E6%BA%90%E7%BC%BA%E5%B0%91%E5%AE%89%E5%85%A8%E5%93%8D%E5%BA%94%E5%A4%B4)
   - [[2026-06-12] Astro hydration inline scripts 被 CSP 拦截](#2026-06-12-astro-hydration-inline-scripts-%E8%A2%AB-csp-%E6%8B%A6%E6%88%AA)
+  - [[2026-06-14] Chat Widget iframe 被 CSP frame-src 拦截](#2026-06-14-chat-widget-iframe-%E8%A2%AB-csp-frame-src-%E6%8B%A6%E6%88%AA)
   - [[2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖](#2026-06-12-_astro-%E9%95%BF%E7%BC%93%E5%AD%98%E8%A2%AB%E9%80%9A%E7%94%A8%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E8%A7%84%E5%88%99%E8%A6%86%E7%9B%96)
   - [[2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化](#2026-06-12-%E9%9A%90%E8%97%8F%E6%95%8F%E6%84%9F%E8%B7%AF%E5%BE%84%E5%9B%9E%E9%80%80%E9%A6%96%E9%A1%B5%E4%B8%94-apex-%E5%9F%9F%E5%90%8D%E6%9C%AA%E8%A7%84%E8%8C%83%E5%8C%96)
   - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
@@ -26,7 +27,7 @@
 # NGINX Troubleshooting Guide
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 12, 2026, 23:42 (UTC+08:00)
+- **最后更新**: June 14, 2026, 17:52 (UTC+08:00)
 
 ---
 
@@ -91,6 +92,7 @@
 - [x] [2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败
 - [x] [2026-06-12] 静态页面和资源缺少安全响应头
 - [x] [2026-06-12] Astro hydration inline scripts 被 CSP 拦截
+- [x] [2026-06-14] Chat Widget iframe 被 CSP frame-src 拦截
 - [x] [2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖
 - [x] [2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化
 
@@ -214,6 +216,49 @@ Nginx CSP 收紧后，`script-src` 未包含 Astro 5.12 生产构建生成的 hy
 - 前端重新构建、升级 Astro、调整 hydration 指令或新增 inline script 后，应重新抓取生产 HTML 并复核 hash。
 - 中长期可评估 Astro 6 的 `security.csp` 原生能力，减少手工维护 Nginx hash allowlist。
 - CSP 变更上线后需用浏览器 Console 验收，`curl` 只能确认 header，不能证明页面脚本实际可执行。
+
+---
+
+## [2026-06-14] Chat Widget iframe 被 CSP frame-src 拦截
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 前端构建：Astro 5.12.8 + React，首页 `ChatWidget` 通过 iframe 加载 `/deepseek_chat/`
+- 相关模块：`Content-Security-Policy`、`frame-src`
+
+**症状 (Symptoms)**
+
+- 首页点击右下角 `button.c-chat-widget-toggle` 后，面板出现但聊天 iframe 无法加载。
+- 浏览器 Console 报错：
+
+```text
+Framing 'https://www.rendazhang.com/deepseek_chat/' violates the following Content Security Policy directive: "frame-src https://www.credly.com".
+```
+
+- 直接访问 `https://www.rendazhang.com/deepseek_chat/` 可正常使用。
+
+**排查过程 (Diagnosis)**
+
+1. 检查前端 `ChatWidget`，iframe 使用同源相对路径 `src={`${CHAT_PAGE_PATH}/`}`，实际加载 `/deepseek_chat/`。
+2. 检查线上 CSP 响应头，`frame-src` 只包含 `https://www.credly.com`。
+3. Credly 证书 iframe 需要保留外部来源，Chat Widget iframe 需要允许同源来源。
+
+**根因 (Root Cause)**
+
+CSP `frame-src` 只放行 Credly，没有放行 `'self'`，导致本站首页不能嵌入本站同源聊天页。
+
+**解决方案 (Fix)**
+
+- 将 `snippets/security-headers.conf` 中的 `frame-src https://www.credly.com;` 改为 `frame-src 'self' https://www.credly.com;`。
+- 保留 `frame-ancestors 'none'` 限制本站被外部嵌入。
+- 保留 `X-Frame-Options: SAMEORIGIN`，允许同源页面之间 iframe 嵌入。
+
+**经验总结 (Lessons Learned)**
+
+- `frame-src` 控制当前页面可以嵌入哪些 iframe，`frame-ancestors` 控制当前页面允许被谁嵌入，二者方向不同。
+- 新增 iframe 功能时要同步更新 CSP allowlist，并用浏览器 Console 验收。
 
 ---
 

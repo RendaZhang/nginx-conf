@@ -16,7 +16,7 @@
 # 项目需求清单
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 12, 2026, 23:42 (UTC+08:00)
+- **最后更新**: June 14, 2026, 17:52 (UTC+08:00)
 
 ---
 
@@ -55,6 +55,7 @@
 - [x] 修复 apex 域名直接 200：`https://rendazhang.com/*` 统一 301 到 `https://www.rendazhang.com/*`
 - [x] 明确 `ip-blacklist.conf` 为服务器本地运行态配置：从 Git 索引移除并加入 `.gitignore`，避免 Git 发布覆盖黑名单
 - [x] 修复 Astro hydration inline scripts 被 CSP 拦截：`script-src` 使用当前生产构建 SHA-256 hash allowlist，不启用 `unsafe-inline`
+- [x] 修复首页 Chat Widget iframe 被 CSP 拦截：`frame-src` 显式允许 `'self'`，同时继续保留 Credly iframe 来源
 - [ ] 集成压力测试场景（如 `siege -c 50`）到 CI 流程
 - [ ] 文档内提供 Docker 化部署示例
 
@@ -71,6 +72,7 @@
 - [x] **apex 域名未规范化**：`https://rendazhang.com/` 直接 200；已增加 apex HTTPS server，统一 301 到 www canonical host。
 - [x] **`ip-blacklist.conf` 被 Git 跟踪且服务器存在大量本地变更**：黑名单属于服务器本地运行态配置；已改为 Git ignore，并要求 Nginx 配置发布走 commit/push + 服务器 `git pull --ff-only`。
 - [x] **Astro hydration inline scripts 被 CSP 拦截**：首页、`/deepseek_chat/`、`/login/`、`/docs/` 的 Astro inline runtime hash 已加入 `script-src`，保持不使用 `unsafe-inline`。
+- [x] **Chat Widget iframe 被 CSP 拦截**：首页右下角聊天浮标通过同源 iframe 加载 `/deepseek_chat/`；已在 `frame-src` 中加入 `'self'`，保留 `https://www.credly.com`。
 
 ### 后续加固
 

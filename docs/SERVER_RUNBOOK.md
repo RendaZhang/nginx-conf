@@ -31,7 +31,7 @@
 # 服务器配置运行手册
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 12, 2026, 23:42 (UTC+08:00)
+- **最后更新**: June 14, 2026, 17:52 (UTC+08:00)
 
 ---
 
@@ -121,6 +121,7 @@ systemd + OOM
 - **TLS 1.2 兼容性**：当前证书为 ECDSA，`ssl_ciphers` 必须包含 `ECDHE-ECDSA-*`；TLS 1.3 cipher 不由 `ssl_ciphers` 控制。
 - **安全头**：通过 `snippets/security-headers.conf` 统一维护。凡是 location 内声明了 `add_header`，都要显式 include 该 snippet。
 - **CSP inline hash**：Astro 5.12 生产构建会注入 hydration inline scripts，`script-src` 需保留当前生产构建的 SHA-256 hash allowlist；前端重新构建后要复核浏览器 CSP console。
+- **CSP frame-src**：首页 Chat Widget 依赖同源 iframe 加载 `/deepseek_chat/`，Credly 证书依赖 `https://www.credly.com`，因此 `frame-src` 必须保留 `'self' https://www.credly.com`。
 - **Canonical host**：`rendazhang.com` 与所有 HTTP 请求统一 301 到 `https://www.rendazhang.com$request_uri`。
 - **静态缓存**：`location ^~ /_astro/` 返回一年 immutable 缓存；通用静态资源返回 30 天 immutable 缓存。
 - **敏感路径**：隐藏文件默认 404，保留 `/.well-known/` 标准路径。
@@ -561,3 +562,4 @@ curl -k -I --resolve rendazhang.com:443:127.0.0.1 https://rendazhang.com/
 | 2025-08-13 | 修正 `models.Session.ip` 类型与 `schema.sql` 对齐（INET），时间戳默认改用 `func.now()` 或 UTC-aware 时间             | cloudchat    |           |     | 恢复旧字段类型和默认值       |                     |
 | 2026-06-12 | 修复 TLS 1.2 ECDSA cipher、安全头继承、`/_astro/` 长缓存、隐藏敏感路径 404 与 apex 到 www 301，并改为 Git pull 发布流程 | nginx        |           |     | 回滚对应 Git commit 后 `nginx -t && systemctl reload nginx` | |
 | 2026-06-12 | 为 Astro 5.12 hydration inline scripts 补齐 CSP `script-src` SHA-256 hash allowlist，恢复前端交互脚本执行 | nginx        |           |     | 回滚对应 Git commit 后 `nginx -t && systemctl reload nginx` | |
+| 2026-06-14 | 为首页 Chat Widget 补齐 CSP `frame-src 'self'`，恢复同源 `/deepseek_chat/` iframe 加载 | nginx        |           |     | 回滚对应 Git commit 后 `nginx -t && systemctl reload nginx` | |
