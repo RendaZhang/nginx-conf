@@ -244,15 +244,16 @@ Framing 'https://www.rendazhang.com/deepseek_chat/' violates the following Conte
 1. 检查前端 `ChatWidget`，iframe 使用同源相对路径 `src={`${CHAT_PAGE_PATH}/`}`，实际加载 `/deepseek_chat/`。
 2. 检查线上 CSP 响应头，`frame-src` 只包含 `https://www.credly.com`。
 3. Credly 证书 iframe 需要保留外部来源，Chat Widget iframe 需要允许同源来源。
+4. 浏览器点击验证后发现 `/deepseek_chat/` 页面自身的 `frame-ancestors 'none'` 仍会拒绝被首页嵌入。
 
 **根因 (Root Cause)**
 
-CSP `frame-src` 只放行 Credly，没有放行 `'self'`，导致本站首页不能嵌入本站同源聊天页。
+CSP `frame-src` 只放行 Credly，没有放行 `'self'`；同时 `frame-ancestors 'none'` 会禁止 `/deepseek_chat/` 被任何页面嵌入。二者共同导致本站首页不能嵌入本站同源聊天页。
 
 **解决方案 (Fix)**
 
 - 将 `snippets/security-headers.conf` 中的 `frame-src https://www.credly.com;` 改为 `frame-src 'self' https://www.credly.com;`。
-- 保留 `frame-ancestors 'none'` 限制本站被外部嵌入。
+- 将 `frame-ancestors 'none'` 改为 `frame-ancestors 'self'`，只允许同源页面嵌入本站页面。
 - 保留 `X-Frame-Options: SAMEORIGIN`，允许同源页面之间 iframe 嵌入。
 
 **经验总结 (Lessons Learned)**
