@@ -171,7 +171,7 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -t
 
 - NGINX 版本：1.24.0
 - 操作系统：Ubuntu 24.04
-- 前端构建：Astro 5.12.8 + React，静态文件由 Nginx 提供
+- 前端构建：Astro 6 + React，静态文件由 Nginx 提供
 - 相关模块：`Content-Security-Policy`、Astro partial hydration
 
 **症状 (Symptoms)**
@@ -182,7 +182,7 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -t
 Executing inline script violates the following Content Security Policy directive 'script-src ...'
 ```
 
-- 报错中出现 `sha256-QzWF...`、`sha256-U7a...`、`sha256-Q2BP...` 等 inline script hash。
+- 报错中出现 `sha256-QzWF...`、`sha256-SaCk...`、`sha256-Q2BP...` 等 inline script hash。
 - 页面 HTML 可正常返回，但 React/Astro hydration 相关交互脚本被浏览器阻止执行。
 
 **排查过程 (Diagnosis)**
@@ -190,11 +190,11 @@ Executing inline script violates the following Content Security Policy directive
 1. 检查线上响应头，确认 `script-src` 仅允许 `'self'`、Credly、Sentry 等外部来源，没有 inline script hash、nonce 或 `unsafe-inline`。
 2. 下载首页、`/deepseek_chat/`、`/login/`、`/docs/` HTML，计算所有可执行 inline script 的 SHA-256。
 3. 报错 hash 与 Astro 自动注入的 hydration runtime inline scripts 匹配；`application/ld+json` 是结构化数据脚本，不是本次 console 报错来源。
-4. 复核前端源码：`/js/base-layout-init.js` 已外置，但 Astro 5.12 仍会为 `client:load`、`client:visible` 等 hydration 指令注入 runtime inline scripts。
+4. 复核前端源码：`/js/base-layout-init.js` 已外置，但 Astro 6 仍会为 `client:load`、`client:visible` 等 hydration 指令注入 runtime inline scripts。
 
 **根因 (Root Cause)**
 
-Nginx CSP 收紧后，`script-src` 未包含 Astro 5.12 生产构建生成的 hydration inline script hash。浏览器按 CSP 阻止这些脚本执行。
+Nginx CSP 收紧后，`script-src` 未包含当前 Astro 生产构建生成的 hydration inline script hash。浏览器按 CSP 阻止这些脚本执行。
 
 **解决方案 (Fix)**
 
@@ -202,9 +202,9 @@ Nginx CSP 收紧后，`script-src` 未包含 Astro 5.12 生产构建生成的 hy
 
 ```text
 'sha256-QzWFZi+FLIx23tnm9SBU4aEgx4x8DsuASP07mfqol/c='
-'sha256-U7a72oKuFFz8D7GUHLA1NZ0ciymHmDOc9T9aVDg2rWU='
+'sha256-SaCkFfPruIdTXT8/97JArQmGxiJAL2o4bBDvSgJ5y3Q='
 'sha256-Q2BPg90ZMplYY+FSdApNErhpWafg2hcRRbndmvxuL/Q='
-'sha256-UHe1meAWRK+8Zoz3TfFBwXdJLXzDSA1GuEs8oRqxVt8='
+'sha256-mPc0DfitWGAMcDxTUukGOzm0aUEa/A67WnBDMh7FOHI='
 'sha256-9PM+iIXt2xgJUXAwbq9LGlzgU9Wqrfd7/UpLbzfA+Tk='
 ```
 
@@ -214,7 +214,7 @@ Nginx CSP 收紧后，`script-src` 未包含 Astro 5.12 生产构建生成的 hy
 **经验总结 (Lessons Learned)**
 
 - 前端重新构建、升级 Astro、调整 hydration 指令或新增 inline script 后，应重新抓取生产 HTML 并复核 hash。
-- 中长期可评估 Astro 6 的 `security.csp` 原生能力，减少手工维护 Nginx hash allowlist。
+- 中长期可评估 Astro 的 `security.csp` 原生能力，减少手工维护 Nginx hash allowlist。
 - CSP 变更上线后需用浏览器 Console 验收，`curl` 只能确认 header，不能证明页面脚本实际可执行。
 
 ---
@@ -225,7 +225,7 @@ Nginx CSP 收紧后，`script-src` 未包含 Astro 5.12 生产构建生成的 hy
 
 - NGINX 版本：1.24.0
 - 操作系统：Ubuntu 24.04
-- 前端构建：Astro 5.12.8 + React，首页 `ChatWidget` 通过 iframe 加载 `/deepseek_chat/`
+- 前端构建：Astro 6 + React，首页 `ChatWidget` 通过 iframe 加载 `/deepseek_chat/`
 - 相关模块：`Content-Security-Policy`、`frame-src`
 
 **症状 (Symptoms)**
