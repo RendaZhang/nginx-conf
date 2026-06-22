@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Last updated: 2026-06-15
+Last updated: 2026-06-22
 
 This file gives AI coding agents the project context needed to work safely in the
 `nginx-conf` operations repository. The repository is public, so do not add
@@ -59,6 +59,23 @@ For docs-only changes:
 ```bash
 pre-commit run --all-files
 ```
+
+## Local Tooling Notes
+
+- This repository normally does not own a project runtime pin. Local validation
+  is mostly Git, pre-commit, and Nginx config checks.
+- `mise` is not macOS-only. For Windows agents working across the three
+  PersonalWeb repositories, prefer WSL2 + Ubuntu + mise as the supported local
+  baseline. Native Windows PowerShell + mise may work, but it is not the primary
+  validated environment for this operations repository.
+- A developer machine may keep a non-committed parent workspace `.mise.toml` to
+  provide shared Node/Python defaults for `rendazhang`, `python-cloud-chat`, and
+  `nginx-conf`. Do not depend on that file in production docs or scripts; each
+  code repository's committed runtime files remain authoritative where they
+  exist.
+- If a non-interactive shell resolves system Node/Python instead of mise, check
+  that `~/.local/share/mise/shims` is on `PATH` and run `mise doctor`. Do not
+  add machine-specific runtime paths to committed Nginx docs or config.
 
 For Nginx config changes, validate on the authorized server before reload:
 
