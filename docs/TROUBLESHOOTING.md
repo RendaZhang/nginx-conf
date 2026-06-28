@@ -324,6 +324,46 @@ CSP `frame-src` 只放行 Credly，没有放行 `'self'`；同时 `frame-ancesto
 
 ---
 
+## [2026-06-28] 未知静态路径返回首页造成 soft-404
+
+**环境**
+
+- NGINX 版本：1.24.0
+- 操作系统：Ubuntu 24.04
+- 相关模块：静态 Astro 站点、SEO/GEO、`location /`
+
+**症状 (Symptoms)**
+
+- `https://www.rendazhang.com/definitely-not-real` 返回首页 HTML 和 HTTP 200。
+- 未提供的公开资源，例如 `/manifest.webmanifest`，也被回退到首页 HTML。
+
+**排查过程 (Diagnosis)**
+
+1. 主站是静态 Astro 输出，不需要 SPA history fallback。
+2. `location /` 使用 `try_files $uri $uri/ /index.html`，导致所有未知路径都返回首页。
+3. 搜索引擎会把这类响应视为 soft-404 风险，降低不存在 URL、sitemap 和正文抓取结果的可信度。
+
+**根因 (Root Cause)**
+
+通用静态路径沿用了 SPA fallback，但当前站点路由已经由 Astro 构建为真实静态文件和目录。
+
+**解决方案 (Fix)**
+
+- 将 `location /` 改为 `try_files $uri $uri/ =404;`。
+- 保留现有 `error_page 404 /404.html`，让未知路径返回真实 HTTP 404 并展示静态错误页。
+- 部署后验证：
+
+```bash
+curl -I https://www.rendazhang.com/
+curl -I https://www.rendazhang.com/llms.txt
+curl -I https://www.rendazhang.com/definitely-not-real
+curl -I https://www.rendazhang.com/manifest.webmanifest
+```
+
+预期：主页和 `llms.txt` 为 200，未知路径与未提供的 manifest 为 404。
+
+---
+
 ## [2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`
 
 **环境**

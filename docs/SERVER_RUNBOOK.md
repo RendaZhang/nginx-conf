@@ -523,10 +523,13 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -t
 # 静态页面、XML/JSON、指纹资源都应带安全头
 curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/
 curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/sitemap.xml
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/llms.txt
 curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/_astro/chat_widget.CudJCDys.css
 
-# 敏感路径应为 404；apex 应 301 到 www
+# 敏感路径和未知静态路径应为 404；apex 应 301 到 www
 curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/.env
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/definitely-not-real
+curl -k -I --resolve www.rendazhang.com:443:127.0.0.1 https://www.rendazhang.com/manifest.webmanifest
 curl -k -I --resolve rendazhang.com:443:127.0.0.1 https://rendazhang.com/
 ```
 
