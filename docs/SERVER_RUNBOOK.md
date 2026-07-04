@@ -251,7 +251,7 @@ systemd + OOM
   ```
   > 注：实际环境文件已写入真实密码；文档中以 `***` 遮蔽。
 - **绑定端口**：`0.0.0.0:5000`（Nginx 反代）
-- **健康检查**：`GET /cloudchat/healthz`（建议添加）
+- **健康检查**：`GET /cloudchat/auth/healthz`（已实现，探测 Redis + PostgreSQL）
 
 ---
 
@@ -413,7 +413,7 @@ systemd + OOM
 | `/cloudchat/auth/me`              | GET  | Cookie `cc_auth`                              | `{ ok:true, user:{...} }`                 | 200, 401      | 用户字段：id/uid/email/phone/display\_name/is\_active |
 | `/cloudchat/auth/password/forgot` | POST | `{ identifier }`                              | `{ ok:true }`                             | 200           | 生产不返回 token；限速：IP 20/h、identifier 5/h            |
 | `/cloudchat/auth/password/reset`  | POST | `{ token, password }`                         | `{ ok:true, revoked_sessions:n }`         | 200, 400      | 一次性 token；重置后会话强制下线（简单版）                         |
-| `/cloudchat/auth/healthz`         | GET  | -                                             | `{ ok:true }`                             | 200/503       | 依赖探测（Redis）                                    |
+| `/cloudchat/auth/healthz`         | GET  | -                                             | `{ ok:true }`                             | 200/503       | 依赖探测（Redis + PostgreSQL）                       |
 
 - **Cookie**：`cc_auth`（认证，会话 Redis 保存 `sess:<sid> -> user_id`，`Max-Age=604800`，`HttpOnly; SameSite=Lax; Secure=<按环境>`）；`cc_app`（Flask-Session）。
 - **错误格式**：`{ ok:false, error:"..." }`。

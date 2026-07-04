@@ -61,7 +61,7 @@
   - 1 GB RAM
   - 40 GB SSD
 - **Web 服务器**: Nginx + Gunicorn(Gevent)
-- **参考架构**：Web (Frontend (Astro + React + Bootstrap)) → Server (Ubuntu → Nginx → systemd → Gunicorn + Gevent → Backend (Flask APP))
+- **参考架构**：Web (Frontend (Astro + React)) → Server (Ubuntu → Nginx → systemd → Gunicorn + Gevent → Backend (Flask APP))
 
 ### 架构示意图
 
@@ -150,7 +150,8 @@ graph TD
   - 维护 `ip-blacklist.conf`，结合 iptables/Nginx 规则屏蔽恶意 IP；该文件属于服务器本地运行态配置，不随 Git 仓库同步
 - **发布约定**：
   - 本地修改 Nginx 配置后先 commit/push 到仓库，服务器在 `/etc/nginx` 执行 `git pull --ff-only` 拉取最新配置
-  - 每次拉取后必须执行 `nginx -t`，通过后再 `systemctl reload nginx`
+  - 配置变更拉取后必须执行 `nginx -t`，通过后再 `systemctl reload nginx`
+  - 文档-only 更新只需要 `git pull --ff-only` 同步，不需要 `nginx -t` 或 reload
   - 不再直接覆盖整个 `/etc/nginx`，避免误覆盖 `ip-blacklist.conf`、证书、黑名单或服务器本地状态文件
 - **自定义错误页面**:
   - `404.html`
@@ -167,7 +168,7 @@ graph TD
 | Nginx | 1.24 | 1.24.0 |
 | Certbot | 2.10 | 2.10.0 |
 | Gunicorn | 23 | 23.0.0 |
-| Python | 3.12 | 3.12.3 |
+| Python | 3.13 | 3.13.14 |
 
 ### Nginx 配置
 
@@ -247,6 +248,10 @@ graph TD
 ### 服务器配置运行手册
 
 📄 [Server Runbook](docs/SERVER_RUNBOOK.md)
+
+### 运维维护命令索引
+
+📄 [Operations Maintenance Guide](https://github.com/RendaZhang/rendazhang/blob/master/docs/OPERATIONS.md#operations-maintenance-guide)
 
 ### 服务器安全报告
 
