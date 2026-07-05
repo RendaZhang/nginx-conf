@@ -16,7 +16,7 @@
 # 项目需求清单
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 14, 2026, 17:52 (UTC+08:00)
+- **最后更新**: July 05, 2026, 14:48 (UTC+08:00)
 
 ---
 
@@ -79,7 +79,7 @@
 - [ ] SSH 当前允许 `PermitRootLogin yes` 与 `PasswordAuthentication yes`，需创建非 root 管理用户并切换为密钥登录。
 - [ ] `cloudchat.service` 当前以 root 运行且 Gunicorn 绑定 `0.0.0.0:5000`，需迁移到低权限用户并绑定 `127.0.0.1:5000`。
 - [ ] 主机防火墙 `ufw` 当前 inactive，虽云安全组阻断了部分公网端口，仍需在主机层限制非必要端口。
-- [ ] 前端升级 Astro 或 GitHub Actions 重新构建后，需复核 inline script hash 是否变化；中长期可评估 Astro 6 `security.csp` 原生配置。
+- [ ] 前端升级 Astro、调整 hydration 指令、引入新的 inline script 或 GitHub Actions 重新构建后，需复核 inline script hash 是否变化；中长期可继续评估 Astro 原生 CSP 能力，减少手工维护 Nginx hash allowlist。
 - [ ] 定期巡检证书有效期、`certbot.timer`、安全头覆盖、`/_astro/` 长缓存、敏感路径 404 和 `/cloudchat/auth/healthz`。
 
 ---

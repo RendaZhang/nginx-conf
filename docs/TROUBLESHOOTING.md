@@ -27,7 +27,7 @@
 # NGINX Troubleshooting Guide
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 14, 2026, 17:52 (UTC+08:00)
+- **最后更新**: July 05, 2026, 14:48 (UTC+08:00)
 
 ---
 
@@ -171,7 +171,7 @@ echo | openssl s_client -connect 127.0.0.1:443 -servername www.rendazhang.com -t
 
 - NGINX 版本：1.24.0
 - 操作系统：Ubuntu 24.04
-- 前端构建：Astro 6 + React，静态文件由 Nginx 提供
+- 当时前端构建：Astro 6 + React，静态文件由 Nginx 提供
 - 相关模块：`Content-Security-Policy`、Astro partial hydration
 
 **症状 (Symptoms)**
@@ -216,6 +216,7 @@ Nginx CSP 收紧后，`script-src` 未包含当前 Astro 生产构建生成的 h
 - 前端重新构建、升级 Astro、调整 hydration 指令或新增 inline script 后，应重新抓取生产 HTML 并复核 hash。
 - 中长期可评估 Astro 的 `security.csp` 原生能力，减少手工维护 Nginx hash allowlist。
 - CSP 变更上线后需用浏览器 Console 验收，`curl` 只能确认 header，不能证明页面脚本实际可执行。
+- 当前状态（2026-07-05）：前端已升级到 Astro 7，`/deepseek_chat/` iframe 嵌入标记已外置为同源脚本 `/js/deepseek-embed.js`；当前 Nginx CSP hash allowlist 已覆盖已验证的可执行 inline scripts，未启用 `unsafe-inline`。
 
 ---
 
@@ -225,7 +226,7 @@ Nginx CSP 收紧后，`script-src` 未包含当前 Astro 生产构建生成的 h
 
 - NGINX 版本：1.24.0
 - 操作系统：Ubuntu 24.04
-- 前端构建：Astro 6 + React，首页 `ChatWidget` 通过 iframe 加载 `/deepseek_chat/`
+- 当时前端构建：Astro 6 + React，首页 `ChatWidget` 通过 iframe 加载 `/deepseek_chat/`
 - 相关模块：`Content-Security-Policy`、`frame-src`
 
 **症状 (Symptoms)**

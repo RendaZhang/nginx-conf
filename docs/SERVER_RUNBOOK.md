@@ -31,7 +31,7 @@
 # 服务器配置运行手册
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: June 14, 2026, 17:52 (UTC+08:00)
+- **最后更新**: July 05, 2026, 14:48 (UTC+08:00)
 
 ---
 
@@ -120,7 +120,7 @@ systemd + OOM
 - **TLS**：`/etc/letsencrypt/live/rendazhang.com/{fullchain.pem,privkey.pem}`；自动续期任务：`certbot.timer`
 - **TLS 1.2 兼容性**：当前证书为 ECDSA，`ssl_ciphers` 必须包含 `ECDHE-ECDSA-*`；TLS 1.3 cipher 不由 `ssl_ciphers` 控制。
 - **安全头**：通过 `snippets/security-headers.conf` 统一维护。凡是 location 内声明了 `add_header`，都要显式 include 该 snippet。
-- **CSP inline hash**：Astro 6 生产构建会注入 hydration inline scripts，`script-src` 需保留当前生产构建的 SHA-256 hash allowlist；前端重新构建后要复核浏览器 CSP console。
+- **CSP inline hash**：当前 Astro 7 静态前端构建的可执行 inline scripts 由 `script-src` SHA-256 hash allowlist 放行，不启用 `unsafe-inline`；`/deepseek_chat/` iframe 嵌入标记由外部同源脚本 `/js/deepseek-embed.js` 处理。前端重新构建、升级 Astro、调整 hydration 指令或新增 inline script 后，要复核浏览器 CSP console 和 Nginx hash allowlist。
 - **CSP frame policy**：首页 Chat Widget 依赖同源 iframe 加载 `/deepseek_chat/`，Credly 证书依赖 `https://www.credly.com`；`frame-src` 必须保留 `'self' https://www.credly.com`，`frame-ancestors` 必须保留 `'self'`。
 - **Canonical host**：`rendazhang.com` 与所有 HTTP 请求统一 301 到 `https://www.rendazhang.com$request_uri`。
 - **静态缓存**：`location ^~ /_astro/` 返回一年 immutable 缓存；通用静态资源返回 30 天 immutable 缓存。
