@@ -217,6 +217,7 @@ Nginx CSP 收紧后，`script-src` 未包含当前 Astro 生产构建生成的 h
 - 中长期可评估 Astro 的 `security.csp` 原生能力，减少手工维护 Nginx hash allowlist。
 - CSP 变更上线后需用浏览器 Console 验收，`curl` 只能确认 header，不能证明页面脚本实际可执行。
 - 当前状态（2026-07-05）：前端已升级到 Astro 7，`/deepseek_chat/` iframe 嵌入标记已外置为同源脚本 `/js/deepseek-embed.js`；当前 Nginx CSP hash allowlist 已覆盖已验证的可执行 inline scripts，未启用 `unsafe-inline`。
+- 2026-08-01：前端 `astro@7.1.6` 安全补丁改变 Astro island hydration runtime，可执行 inline script 新增 hash `sha256-Ya0pUYrC7nM5Cn/056TyVuEiz6dFGrzmkWzgON0pF0U=`；本次仅追加该 hash，保留既有 hash 以兼容当前线上构建与回滚窗口。
 
 ---
 
