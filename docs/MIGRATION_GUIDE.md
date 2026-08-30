@@ -147,6 +147,9 @@ PORT     STATE SERVICE
 ...
 ```
 
+`5000/tcp` 只应在 `localhost` 扫描中出现；Gunicorn 绑定 `127.0.0.1:5000`，不得作为公网
+或主机外部入口开放。
+
 ### 关键目录结构和项目
 
 ```tree
@@ -280,9 +283,10 @@ vi ~/.ssh/authorized_keys
 sudo ufw allow OpenSSH # 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw allow 5000/tcp
 sudo ufw --force enable
 ```
+
+不要为 5000/tcp 添加 UFW 或云安全组放行规则；该端口只供本机 Nginx 回环反代。
 
 #### 删除服务器的自带服务
 
@@ -684,40 +688,17 @@ redis-cli -a $PWD memory stats    # 详细内存
 
 #### 配置 systemd 服务
 
-```bash
-sudo tee /etc/systemd/system/cloudchat.service <<EOF
-[Unit]
-Description=CloudChat Flask App with Gunicorn
-After=network.target redis-server.service
+CloudChat 单元不再通过迁移文档内联创建。规范文件位于后端仓库
+`deploy/cloudchat.service`，由通过质量门禁的 exact-SHA 后端 workflow 负责：
 
-[Service]
-User=root
-WorkingDirectory=/opt/cloudchat
-Environment="PATH=/opt/cloudchat/venv/bin"
-Environment="DASHSCOPE_API_KEY=***"
-Environment="DEEPSEEK_API_KEY=***"
-Environment="OPENAI_API_KEY=***"
-Environment="FLASK_SECRET_KEY=***"
-Environment="REDIS_PASSWORD=YOUR_STRONG_PASSWORD"
-ExecStart=/opt/cloudchat/venv/bin/gunicorn --worker-class gevent --workers 2 --worker-connections 50 --max-requests 1000 --max-requests-jitter 50 --timeout 300 --bind 0.0.0.0:5000 app:app
+1. 创建或验证锁定的 `cloudchat` 系统账号；
+2. 在独立运行目录和 `127.0.0.1:5001` 验证候选单元；
+3. 备份并原子安装到 `/etc/systemd/system/cloudchat.service`；
+4. 只重启 CloudChat，并检查非 root 身份、空 capability、`127.0.0.1:5000`、内部/公开健康；
+5. 任一正式检查失败时恢复之前的单元。
 
-Restart=always
-RestartSec=3
-KillSignal=SIGINT
-ProtectSystem=full
-PrivateTmp=true
-NoNewPrivileges=true
-OOMScoreAdjust=-100
-MemoryMax=600M
-
-[Install]
-WantedBy=multi-user.target
-EOF
-```
-
-`OOMScoreAdjust=-100`: 跟 Redis 一个可杀优先级别。
-
-`MemoryMax=600M`: 超过即 cgroup OOM, systemd 会重启。
+代码、venv 与 `/etc/cloudchat/cloudchat.env` 保持 root 所有，环境文件保持 0600。不要把
+EnvironmentFile 权限放宽给服务账号，也不要重新引入 `User=root` 或 `0.0.0.0:5000`。
 
 启动服务
 

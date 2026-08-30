@@ -198,33 +198,27 @@ systemd + OOM
 
 ## CloudChat 后端 API
 
-- **systemd 单元**：`/etc/systemd/system/cloudchat.service`
-  ```ini
-  [Unit]
-  Description=CloudChat Flask App with Gunicorn
-  After=network.target redis-server.service
-
-  [Service]
-  User=root
-  WorkingDirectory=/opt/cloudchat
-  EnvironmentFile=/etc/cloudchat/cloudchat.env
-  ExecStart=/opt/cloudchat/venv/bin/gunicorn \
-    --worker-class gevent --workers 2 \
-    --worker-connections 50 --max-requests 1000 --max-requests-jitter 50 \
-    --timeout 300 --bind 0.0.0.0:5000 app:app
-
-  Restart=always
-  RestartSec=3
-  KillSignal=SIGINT
-  ProtectSystem=full
-  PrivateTmp=true
-  NoNewPrivileges=true
-
-  OOMScoreAdjust=100
-  MemoryMax=300M
-
-  [Install]
-  WantedBy=multi-user.target
+- **规范 systemd 单元**：后端公开仓库的 `deploy/cloudchat.service` 是唯一来源，由后端
+  exact-SHA workflow 安装到 `/etc/systemd/system/cloudchat.service`。不要在服务器长期
+  手工维护另一份单元。
+- **权限边界**：Git 工作树、Python venv、EnvironmentFile 和服务管理保持 root 所有；
+  Gunicorn/Flask 主进程使用锁定的 `cloudchat` 系统账号，capability bounding set 为空。
+- **监听边界**：Gunicorn 只监听 `127.0.0.1:5000`，Nginx 通过本机回环反代；不得向公网
+  开放 5000 端口。
+- **可写边界**：应用代码只读；systemd 管理 `/run/cloudchat` 与 `/var/lib/cloudchat`，并
+  应用严格文件系统、home、device、namespace 和资源限制。
+- **发布边界**：规范单元发生变化或漂移时，后端 workflow 先在 `127.0.0.1:5001` 运行
+  临时候选并验证身份、capability、监听和依赖健康，再备份/原子安装正式单元。正式检查
+  失败会恢复之前的单元；Nginx、Redis、PostgreSQL 和 PgBouncer 不随之重启。
+- **只读检查**：
+  ```bash
+  cmp --silent /opt/cloudchat/deploy/cloudchat.service \
+    /etc/systemd/system/cloudchat.service
+  systemctl show cloudchat.service \
+    -p User -p Group -p NRestarts -p NoNewPrivileges \
+    -p PrivateTmp -p PrivateDevices -p ProtectSystem -p ProtectHome
+  ss -H -ltn 'sport = :5000'
+  systemd-analyze security --no-pager cloudchat.service
   ```
 - **环境变量文件**：`/etc/cloudchat/cloudchat.env`（**权限 600**）
   ```
@@ -254,7 +248,7 @@ systemd + OOM
   FRONTEND_BASE_URL=https://www.rendazhang.com
   ```
   > 注：实际环境文件已写入真实密码；文档中以 `***` 遮蔽。
-- **绑定端口**：`0.0.0.0:5000`（Nginx 反代）
+- **绑定端口**：`127.0.0.1:5000`（仅供本机 Nginx 反代）
 - **健康检查**：`GET /cloudchat/auth/healthz`（已实现，探测 Redis + PostgreSQL）
 
 ---
