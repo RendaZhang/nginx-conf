@@ -126,6 +126,7 @@ systemd + OOM
 - **静态缓存**：`location ^~ /_astro/` 返回一年 immutable 缓存；通用静态资源返回 30 天 immutable 缓存。
 - **敏感路径**：隐藏文件默认 404，保留 `/.well-known/` 标准路径。
 - **黑名单文件**：`/etc/nginx/ip-blacklist.conf` 是服务器本地运行态配置，已加入 `.gitignore`，不得通过 Git 发布覆盖。
+- **仓库 CI**：Pull Request、`master` 推送与手动触发会检查必需文件、脚本语法、绝对软链接契约、运行态文件边界和 pre-commit。CI 不连接服务器，也不具备生产模块、证书、服务器本地 include 或绝对链接目标，因此不能替代 `nginx -t`。
 - **配置发布**：本地提交并 push 后，服务器在 `/etc/nginx` 执行 `git pull --ff-only`；禁止直接同步整个 `/etc/nginx`。
 - **常用命令**：
   ```bash

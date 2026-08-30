@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Last updated: 2026-06-22
+Last updated: 2026-08-30
 
 This file gives AI coding agents the project context needed to work safely in the
 `nginx-conf` operations repository. The repository is public, so do not add
@@ -54,11 +54,21 @@ server as runtime state and must not be replaced by repository syncs.
 
 ## Validation
 
-For docs-only changes:
+Run the portable repository gates for every change:
 
 ```bash
+bash scripts/validate_repository.sh
+bash -n scripts/*.sh
 pre-commit run --all-files
 ```
+
+GitHub Actions runs these checks with Python 3.13.14 and
+`pre-commit==4.2.0` as pinned CI tooling. Python is not an Nginx runtime
+requirement. The repository validator checks tracked files, shell syntax,
+absolute symlink contracts, ignored runtime-state ownership, and the absence
+of committed certificate/private-key material. It does not prove Nginx syntax
+or runtime validity because a portable checkout does not have production
+modules, certificates, absolute link targets, or server-local includes.
 
 ## Local Tooling Notes
 

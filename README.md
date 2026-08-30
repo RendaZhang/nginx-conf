@@ -149,6 +149,8 @@ graph TD
   - 启用 Fail2Ban 服务，根据日志自动封禁暴力破解与异常请求
   - 维护 `ip-blacklist.conf`，结合 iptables/Nginx 规则屏蔽恶意 IP；该文件属于服务器本地运行态配置，不随 Git 仓库同步
 - **发布约定**：
+  - GitHub Actions 在 Pull Request、推送到 `master` 与手动触发时执行可移植的仓库结构检查与 pre-commit；CI 不连接生产服务器
+  - 仓库检查覆盖必需配置文件、脚本语法、绝对软链接契约、运行态黑名单边界与敏感文件排除，但不等同于 Nginx 语法或运行时验证
   - 本地修改 Nginx 配置后先 commit/push 到仓库，服务器在 `/etc/nginx` 执行 `git pull --ff-only` 拉取最新配置
   - 配置变更拉取后必须执行 `nginx -t`，通过后再 `systemctl reload nginx`
   - 文档-only 更新只需要 `git pull --ff-only` 同步，不需要 `nginx -t` 或 reload
@@ -277,8 +279,12 @@ graph TD
 - README 和 docs 下的文档会自动更新 Doctoc 目录（若本地未安装则跳过）。
 - 你也可以手动触发：
   ```bash
+  bash scripts/validate_repository.sh
+  bash -n scripts/*.sh
   pre-commit run --all-files
   ```
+
+- 详细边界见 📄 [Nginx Repository Validation](docs/TESTING.md)。CI 验证仓库结构，但由于可移植 checkout 不包含生产模块、证书、服务器本地 include 与绝对链接目标，配置变更仍必须在生产完整文件系统上通过 `nginx -t` 后才能 reload。
 
 > ✅ 所有提交必须通过 pre-commit 检查；CI 会阻止不符合规范的 PR。
 
