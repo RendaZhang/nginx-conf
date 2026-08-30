@@ -437,28 +437,42 @@ systemd + OOM
   - `GET  /cloudchat/auth/healthz`
   - `POST /cloudchat/auth/password/forgot`
   - `POST /cloudchat/auth/password/reset`
-- **静态/缓存策略**：`<static rules>`
+- **静态/缓存策略**：动态代理缓存只允许精确 `/cloudchat/test`；认证、通用 API 与流式
+  Chat 不缓存。当前源站直接面向公网，不接受客户端提供的转发链作为身份。
 
-> `location /cloudchat/` 核心反代配置示例：
+> CloudChat 核心边缘策略示例：
 > ```nginx
+> limit_req_zone $binary_remote_addr zone=flask_limit:10m rate=5r/s;
+> limit_req_zone $binary_remote_addr zone=chat_limit:10m rate=10r/m;
+> limit_req_status 429;
+>
+> location = /cloudchat/test {
+>     limit_req zone=flask_limit burst=10 nodelay;
+>     proxy_cache cloudchat_cache;
+>     proxy_cache_valid 200 10m;
+>     proxy_pass http://127.0.0.1:5000/test;
+>     proxy_set_header X-Forwarded-For $remote_addr;
+> }
+>
 > location /cloudchat/ {
 >     limit_req zone=flask_limit burst=10 nodelay;
->
->     proxy_cache cloudchat_cache;
->     proxy_cache_valid 200 302 10m;
->     proxy_cache_valid 404      1m;
->     proxy_cache_bypass $do_not_cache;
->     proxy_no_cache $do_not_cache;
->
 >     proxy_pass http://127.0.0.1:5000/;
 >     proxy_http_version 1.1;
 >     proxy_set_header Host $host;
 >     proxy_set_header X-Real-IP $remote_addr;
->     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+>     proxy_set_header X-Forwarded-For $remote_addr;
+> }
+>
+> location = /cloudchat/deepseek_chat {
+>     limit_req zone=chat_limit burst=3 nodelay;
+>     proxy_buffering off;
+>     proxy_pass http://127.0.0.1:5000/deepseek_chat;
+>     proxy_set_header X-Forwarded-For $remote_addr;
 > }
 > ```
 >
-> 可根据应用路径与缓存策略灵活调整以上参数。
+> 若以后引入 CDN 或负载均衡器，必须另行审核并只信任其官方出口网段；不能恢复任意来源
+> `X-Forwarded-For` 信任。
 
 ---
 

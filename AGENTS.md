@@ -112,6 +112,21 @@ production worktree, and verifies public routes, backend health, and frame polic
 - Do not manually pull or reload to hide a failed workflow. Preserve its diagnostics and repair the
   failure through a normal follow-up commit.
 
+## Client Identity, Cache, And Rate-Limit Constraints
+
+- The current origin is directly public. `$remote_addr` must remain the socket peer; do not trust
+  `X-Forwarded-For`, `X-Real-IP`, or another replacement header from arbitrary callers. A future
+  CDN or load balancer requires a separate change with only its documented egress ranges.
+- CloudChat proxy requests must replace incoming forwarding chains and send
+  `X-Forwarded-For: $remote_addr` to the backend.
+- Dynamic proxy caching is an allowlist. Only exact `/cloudchat/test` is cacheable; authentication,
+  general API, and streaming Chat paths must not inherit proxy-cache ownership.
+- Cache purge remains an HTTP loopback-only operator path. Use fake keys for validation and never
+  publish or purge a real production key during routine checks.
+- General API traffic uses `flask_limit`; paid `/cloudchat/deepseek_chat` traffic uses the separate
+  `chat_limit` zone. Rejections return 429. Tune the Chat rate only from observed normal behavior,
+  without merging it back into the broad API zone.
+
 ## CSP And Security Header Constraints
 
 - Security headers are centralized in `snippets/security-headers.conf`.

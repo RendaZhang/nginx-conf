@@ -129,19 +129,24 @@ graph TD
   - `proxy_read_timeout` 设置需要跟 Gunicorn 的 `timeout` 设置对齐
 - **缓存**：
   - `proxy_buffering off` 等设置以支持流式传输（注意：关闭后 `proxy_cache` 将失效）
-  - 使用 `proxy_no_cache` 与 `proxy_cache_bypass` 配合，只缓存无会话的请求
   - 缓存文件在指定 `inactive` 时间内未被访问会自动清理，目录超过 `max_size` 时也会淘汰旧文件
   - 动态缓存由 `cloudchat_cache` 控制，缓存键为 `$host$request_uri`
-  - 动态缓存目录是 `/var/cache/nginx`，`proxy_cache_path` 设置 `inactive=60m`、`max_size=100m`，匹配 `/cloudchat/` 接口并通过 `proxy_cache_valid 200 302 10m` 控制缓存时间；若 60 分钟未再次访问会被自动清理。
+  - 动态缓存采用白名单：只缓存公开且与用户无关的精确 `/cloudchat/test`；认证、通用 API 与流式 Chat 不启用代理缓存
+  - Nginx 保留上游 `Set-Cookie` / `Cache-Control` 的默认缓存语义，不使用全局 `proxy_ignore_headers` 绕过这些边界
+  - 动态缓存目录是 `/var/cache/nginx`，`proxy_cache_path` 设置 `inactive=60m`、`max_size=100m`；`/cloudchat/test` 的 200 响应缓存 10 分钟，404 响应缓存 1 分钟
   - 缓存键由 `proxy_cache_key "$host$request_uri"` 拼接而成：
     - `$host`：主机名
     - `$request_uri`：路径
-    - 缓存键示例：`wwww.rendazhang.com/cloudchat/test`
+    - 缓存键示例：`www.rendazhang.com/cloudchat/test`
   - 通用静态资源使用 `Cache-Control: public, max-age=2592000, immutable` 控制 30 天缓存。
   - 指纹文件位于 `/_astro/` 目录，使用 `location ^~ /_astro/` 避免被通用静态资源正则抢先匹配，缓存时长 365 天，利用哈希文件名实现长期缓存。
 - **限速与流量控制**：
-  - 每个客户端限速配置：`limit_req_zone` 定义 `flask_limit`，5 r/s
+  - 通用 CloudChat API 使用每客户端 `flask_limit`（5 r/s）
+  - 付费流式 `/cloudchat/deepseek_chat` 使用独立 `chat_limit`（10 r/m，`burst=3`）；超限统一返回 429
 - **安全措施**:
+  - 当前源站直接面向公网，以 TCP socket peer 作为客户端身份，不接受任意请求头替换 `$remote_addr`；传给后端的 `X-Forwarded-For` 由边缘重写为该可信地址
+  - HTTP cache purge 仅允许服务器 IPv4/IPv6 loopback，且不返回缓存路径或 key 调试信息
+  - `server_tokens off` 隐藏 Nginx 版本；不发送已废弃的 `X-XSS-Protection`
   - `Strict-Transport-Security` 和 `Content-Security-Policy` 安全头通过 `snippets/security-headers.conf` 集中维护
   - 当前 Astro 7 静态前端构建仍通过 `script-src` SHA-256 hash allowlist 放行已验证的可执行 inline scripts，不使用 `unsafe-inline`；`/deepseek_chat/` iframe 嵌入标记由外部同源脚本 `/js/deepseek-embed.js` 处理
   - Nginx 中只要某个 location 自己声明了 `add_header`，就需要显式 include 安全头 snippet，避免继承失效

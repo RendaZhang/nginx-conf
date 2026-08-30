@@ -14,6 +14,24 @@ pass() {
   printf 'OK: %s\n' "$*"
 }
 
+require_literal() {
+  local path="$1"
+  local value="$2"
+  local message="$3"
+
+  grep -Fq -- "$value" "$path" || fail "$message"
+}
+
+reject_literal() {
+  local path="$1"
+  local value="$2"
+  local message="$3"
+
+  if grep -Fq -- "$value" "$path"; then
+    fail "$message"
+  fi
+}
+
 index_mode() {
   local path="$1"
   local entry
@@ -156,6 +174,82 @@ grep -Eq \
   '^[[:space:]]*include[[:space:]]+/etc/nginx/ip-blacklist\.conf;[[:space:]]*$' \
   nginx.conf || fail "nginx.conf is missing the server-local blacklist include"
 pass "required production include contracts remain present"
+
+if grep -Eq \
+  '^[[:space:]]*(set_real_ip_from|real_ip_header|real_ip_recursive)[[:space:]]' \
+  nginx.conf; then
+  fail "direct origin must not replace socket-peer identity from forwarding headers"
+fi
+for path in nginx.conf proxy_params sites-available/rendazhang.conf; do
+  reject_literal \
+    "$path" \
+    '$proxy_add_x_forwarded_for' \
+    "untrusted forwarded chains must not be propagated: $path"
+done
+require_literal \
+  proxy_params \
+  'proxy_set_header X-Forwarded-For $remote_addr;' \
+  "shared proxy parameters must forward only the trusted edge client identity"
+[[ "$(grep -Fc 'proxy_set_header X-Forwarded-For $remote_addr;' \
+  sites-available/rendazhang.conf)" -eq 3 ]] ||
+  fail "every CloudChat proxy location must forward exactly one trusted client identity"
+pass "direct-origin client identity cannot be replaced or extended by caller headers"
+
+reject_literal \
+  nginx.conf \
+  'proxy_ignore_headers Set-Cookie' \
+  "upstream Set-Cookie must retain its default cache-control semantics"
+require_literal \
+  sites-available/rendazhang.conf \
+  'location = /cloudchat/test {' \
+  "the explicit public cache demonstration route is missing"
+[[ "$(grep -Fc 'proxy_cache cloudchat_cache;' sites-available/rendazhang.conf)" -eq 1 ]] ||
+  fail "CloudChat cache usage must remain restricted to one explicit route"
+require_literal \
+  sites-available/rendazhang.conf \
+  'location = /cloudchat/deepseek_chat {' \
+  "paid Chat must retain an exact edge policy location"
+require_literal \
+  nginx.conf \
+  'limit_req_zone $binary_remote_addr zone=chat_limit:10m rate=10r/m;' \
+  "paid Chat rate zone is missing or has drifted"
+require_literal nginx.conf 'limit_req_status 429;' "rate-limit rejection status must remain 429"
+require_literal \
+  sites-available/rendazhang.conf \
+  'limit_req zone=chat_limit burst=3 nodelay;' \
+  "paid Chat must use the independent bounded rate zone"
+pass "CloudChat cache allowlist and paid-Chat rate policy are explicit"
+
+require_literal nginx.conf 'server_tokens off;' "Nginx version disclosure must remain disabled"
+reject_literal \
+  snippets/security-headers.conf \
+  'X-XSS-Protection' \
+  "deprecated X-XSS-Protection header must not be reintroduced"
+require_literal \
+  snippets/security-headers.conf \
+  'add_header X-Frame-Options "SAMEORIGIN" always;' \
+  "same-origin frame policy is missing"
+require_literal \
+  snippets/security-headers.conf \
+  "frame-src 'self' https://www.credly.com;" \
+  "required Chat Widget and Credly frame sources are missing"
+require_literal \
+  snippets/security-headers.conf \
+  "frame-ancestors 'self';" \
+  "same-origin frame ancestor policy is missing"
+require_literal \
+  sites-available/rendazhang.conf \
+  'location ~ ^/cloudchat/purge-cache/(.+)$ {' \
+  "cache purge route must remain anchored"
+require_literal sites-available/rendazhang.conf 'allow 127.0.0.1;' \
+  "cache purge must allow IPv4 loopback"
+require_literal sites-available/rendazhang.conf 'allow ::1;' \
+  "cache purge must allow IPv6 loopback"
+reject_literal \
+  sites-available/rendazhang.conf \
+  'X-Purge-' \
+  "cache purge responses must not expose debug metadata"
+pass "disclosure, framing, and loopback purge contracts remain enforced"
 
 if git ls-files --error-unmatch -- ip-blacklist.conf >/dev/null 2>&1; then
   fail "ip-blacklist.conf must remain untracked runtime state"
