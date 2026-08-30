@@ -154,6 +154,25 @@ production worktree, and verifies public routes, backend health, and frame polic
 - If a config change affects TLS, CSP, proxying, cache, or redirects, include
   read-only production verification commands in the final report.
 
+## Host SSH And Firewall Boundary
+
+- Production keeps privileged deployment access, but root is public-key only:
+  `PermitRootLogin prohibit-password`, `PasswordAuthentication no`, and
+  `KbdInteractiveAuthentication no`. X11, TCP, agent, and tunnel forwarding are disabled because
+  the current deployment workflows do not require them.
+- UFW is active for IPv4 and IPv6 with default-deny inbound and default-allow outbound. The only
+  public inbound rules are rate-limited TCP 22 plus TCP 80 and 443. Do not expose CloudChat 5000,
+  Redis 6379, PostgreSQL 5432, PgBouncer 6432, PCP ports, or cache-purge paths.
+- Unused Performance Co-Pilot services (`pmcd`, `pmlogger`, `pmproxy`, and `pmie`) are disabled and
+  inactive so they cannot recreate wildcard monitoring listeners. Do not re-enable them as an
+  incidental dependency or monitoring change.
+- SSH, UFW, and PCP state are host-owned, not applied by the Nginx workflow. Any future change is
+  lockout-sensitive: preserve one independent key session, prove a second session, test and arm a
+  host-local timed rollback, validate `sshd -t`, and cancel rollback only after fresh key login,
+  firewall/listener, service, and public-route checks pass.
+- Provider firewall behavior is defense in depth only and was not independently inspected. Never
+  weaken the host policy based on an assumption that the provider blocks a port.
+
 ## Documentation Rules
 
 - Public docs may mention repository names, public paths, public URLs, endpoint

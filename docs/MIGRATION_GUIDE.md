@@ -277,16 +277,21 @@ vi ~/.ssh/authorized_keys
     sudo sysctl -p
     ```
 
-如果端口是用云服务自带的防火墙管理的，比如阿里云的内置的虚拟防火墙功能，则直接修改即可，不需要额外配置比如 ufw 防火墙工具。如果使用了 ufw 防火墙工具，则需要做以下操作：
+云安全组与主机防火墙是两层边界，不能因为云安全组当前阻断端口就省略主机策略。启用 UFW
+前，先保留一个独立 SSH 会话、证明第二个密钥会话，并武装经过测试的主机本地定时回滚；然后使用：
 
 ```bash
-sudo ufw allow OpenSSH # 22/tcp
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw limit 22/tcp # SSH
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw --force enable
 ```
 
-不要为 5000/tcp 添加 UFW 或云安全组放行规则；该端口只供本机 Nginx 回环反代。
+确认新建的独立密钥会话、80/443、公网页面和健康检查全部通过后，才能取消回滚。不要为
+5000、6379、5432、6432 或 PCP 监控端口添加 UFW 或云安全组放行规则；这些端口应保持回环
+监听或关闭。
 
 #### 删除服务器的自带服务
 

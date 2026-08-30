@@ -76,10 +76,15 @@
 
 ### 后续加固
 
-- [ ] SSH 当前允许 `PermitRootLogin yes` 与 `PasswordAuthentication yes`，需创建非 root 管理用户并切换为密钥登录。
+- [x] SSH 保留现有 root 自动发布账号，但已改为仅公钥：`PermitRootLogin prohibit-password`、
+  `PasswordAuthentication no`、`KbdInteractiveAuthentication no`，并关闭未使用的 X11、TCP、
+  agent 与 tunnel forwarding。后续修改必须先证明双独立会话和主机本地定时回滚。
 - [x] `cloudchat.service` 已迁移到锁定的 `cloudchat` 系统账号、空 capability 边界和
   `127.0.0.1:5000`；规范单元由后端 exact-SHA workflow 验证、安装和回滚。
-- [ ] 主机防火墙 `ufw` 当前 inactive，虽云安全组阻断了部分公网端口，仍需在主机层限制非必要端口。
+- [x] 主机 UFW 已对 IPv4/IPv6 启用入站默认拒绝、出站默认允许；公网仅放行限速的
+  22/tcp 与 80/443/tcp。CloudChat、Redis、PostgreSQL、PgBouncer 和 PCP 端口不放行。
+- [x] 未使用的 `pmcd`、`pmlogger`、`pmproxy`、`pmie` 已停止并禁用，避免重新创建 wildcard
+  监控监听；保留软件包以便显式回滚，不在本阶段做卸载。
 - [ ] 前端升级 Astro、调整 hydration 指令、引入新的 inline script 或 GitHub Actions 重新构建后，需复核 inline script hash 是否变化；中长期可继续评估 Astro 原生 CSP 能力，减少手工维护 Nginx hash allowlist。
 - [ ] 定期巡检证书有效期、`certbot.timer`、安全头覆盖、`/_astro/` 长缓存、敏感路径 404 和 `/cloudchat/auth/healthz`。
 
