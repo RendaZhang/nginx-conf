@@ -126,14 +126,17 @@ systemd + OOM
 - **静态缓存**：`location ^~ /_astro/` 返回一年 immutable 缓存；通用静态资源返回 30 天 immutable 缓存。
 - **敏感路径**：隐藏文件默认 404，保留 `/.well-known/` 标准路径。
 - **黑名单文件**：`/etc/nginx/ip-blacklist.conf` 是服务器本地运行态配置，已加入 `.gitignore`，不得通过 Git 发布覆盖。
-- **仓库 CI**：Pull Request、`master` 推送与手动触发会检查必需文件、脚本语法、绝对软链接契约、运行态文件边界和 pre-commit。CI 不连接服务器，也不具备生产模块、证书、服务器本地 include 或绝对链接目标，因此不能替代 `nginx -t`。
-- **配置发布**：本地提交并 push 后，服务器在 `/etc/nginx` 执行 `git pull --ff-only`；禁止直接同步整个 `/etc/nginx`。
+- **仓库 CI**：Pull Request、`master` 推送与手动触发会检查必需文件、脚本语法、绝对软链接契约、运行态文件边界和 pre-commit。Pull Request 不部署；可移植检查不具备生产模块、证书、服务器本地 include 或绝对链接目标，因此不能替代生产 `nginx -t`。
+- **自动发布**：通过检查的 `master` 推送或 `master` 手动触发会把工作流的精确 SHA 快进同步到 `/etc/nginx`。生产 tracked worktree 必须干净，`ip-blacklist.conf` 必须保持 ignored/untracked 且内容、属主和权限不变。禁止直接同步整个 `/etc/nginx`。
+- **条件 reload**：根配置/参数/MIME 文件及 `modules-enabled/`、`sites-available/`、`sites-enabled/`、`snippets/` 变化时，工作流在生产执行 `nginx -t`，通过后 `systemctl reload nginx`；工作流、脚本与文档-only 变化只同步。手动 `force_reload=true` 可在配置未变化时执行同一测试/reload 路径。
 - **常用命令**：
   ```bash
-  cd /etc/nginx && git pull --ff-only
-  sudo nginx -t && sudo systemctl reload nginx
+  gh run list --workflow nginx-ci.yml --branch master --limit 3
+  gh workflow run nginx-ci.yml --ref master -f force_reload=true
   journalctl -u nginx -e --no-pager
   ```
+
+自动发布会验证 Nginx master PID 与 active timestamp 未改变、四个公开页面返回 200、后端健康为 green，并检查 `frame-src 'self' https://www.credly.com`、`frame-ancestors 'self'` 与 `X-Frame-Options: SAMEORIGIN`。失败时不要用人工 pull、`nginx -t` 或 reload 覆盖证据；保留日志并通过正常后续提交修复。
 
 > 关键 `server {}` 段落示例（域名/IP 已脱敏）：
 > ```nginx
@@ -498,9 +501,11 @@ systemd + OOM
 # 检查服务
 systemctl status nginx redis-server cloudchat pgbouncer postgresql --no-pager
 
-# 在线变更与重载
-cd /etc/nginx && git pull --ff-only
-sudo nginx -t && sudo systemctl reload nginx
+# Nginx 自动发布状态与显式同 SHA reload 验证
+gh run list --workflow nginx-ci.yml --branch master --limit 3
+gh workflow run nginx-ci.yml --ref master -f force_reload=true
+
+# 其他服务仍按各自运行手册维护，不属于 Nginx 发布流程
 sudo systemctl restart cloudchat
 sudo systemctl restart redis-server
 sudo systemctl restart pgbouncer

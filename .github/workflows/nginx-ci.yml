@@ -6,6 +6,12 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      force_reload:
+        description: Run production nginx -t and reload even when config is unchanged
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -40,3 +46,67 @@ jobs:
 
       - name: Run pre-commit hooks
         run: pre-commit run --all-files
+
+  deploy:
+    name: Production synchronization
+    needs: validate
+    if: >-
+      github.ref == 'refs/heads/master' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: nginx-production
+      cancel-in-progress: false
+    env:
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      FORCE_RELOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.force_reload && 'true' || 'false' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate deployment metadata
+        run: |
+          set -euo pipefail
+          [[ "$DEPLOY_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$DEPLOY_PATH" == "/etc/nginx" ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$FORCE_RELOAD" == "true" || "$FORCE_RELOAD" == "false" ]]
+
+      - name: Configure strict SSH access
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          [[ -n "$SSH_PRIVATE_KEY" ]]
+          install -m 700 -d "$HOME/.ssh"
+          (umask 077; printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/nginx_deploy_key")
+          ssh-keyscan -T 15 -H "$DEPLOY_HOST" > "$HOME/.ssh/known_hosts"
+          [[ -s "$HOME/.ssh/known_hosts" ]]
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Synchronize exact commit and verify production
+        run: |
+          set -euo pipefail
+          ssh_options=(
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o IdentityFile="$HOME/.ssh/nginx_deploy_key"
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts"
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=15
+          )
+          ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" \
+            bash -s -- "$GITHUB_SHA" "$FORCE_RELOAD" "$DEPLOY_PATH" "$DEPLOY_HOST" \
+            < scripts/deploy_production.sh
+
+      - name: Remove runner SSH credentials
+        if: ${{ always() }}
+        run: |
+          rm -f "$HOME/.ssh/nginx_deploy_key" "$HOME/.ssh/known_hosts"

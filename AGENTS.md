@@ -87,36 +87,30 @@ modules, certificates, absolute link targets, or server-local includes.
   that `~/.local/share/mise/shims` is on `PATH` and run `mise doctor`. Do not
   add machine-specific runtime paths to committed Nginx docs or config.
 
-For Nginx config changes, validate on the authorized server before reload:
+Production delivery is owned by the `Nginx CI` workflow after repository validation passes:
 
 ```bash
-cd /etc/nginx
-git pull --ff-only origin master
-nginx -t
-systemctl reload nginx
+gh workflow run nginx-ci.yml --ref master -f force_reload=true
 ```
 
-Do not reload Nginx when only documentation changed.
+Pull Requests remain CI-only. A `master` push or `master` manual dispatch synchronizes the exact
+workflow SHA into `/etc/nginx`. Repository-owned Nginx behavior changes run production `nginx -t`
+and reload Nginx; workflow, script, and documentation-only changes sync without testing or
+reloading. The manual `force_reload` input exercises the same syntax/reload path on an unchanged
+commit. Every deploy preserves the ignored, untracked `ip-blacklist.conf`, requires a clean tracked
+production worktree, and verifies public routes, backend health, and frame policy.
 
 ## Deployment
 
-- Normal Nginx config release flow:
-  1. Commit and push this repository.
-  2. On the authorized production server:
-
-     ```bash
-     cd /etc/nginx
-     git pull --ff-only origin master
-     nginx -t
-     systemctl reload nginx
-     ```
-
-  3. Perform read-only checks with `curl -I` for the affected routes.
-
-- For docs-only updates, `git pull --ff-only` is enough; no `nginx -t` or reload
-  is required unless configuration files changed.
+- Normal Nginx releases are automatic after a validated `master` push. The deploy job fetches and
+  fast-forwards to the exact workflow SHA, then performs the required production checks.
+- Pull Requests never deploy. Manual `master` dispatches use the same exact-SHA path and can set
+  `force_reload=true` for an explicit syntax/reload check.
+- Workflow, script, and documentation-only updates do not run `nginx -t` or reload unless forced.
 - Never copy an entire local directory over `/etc/nginx`; use Git pull so ignored
   runtime files remain untouched.
+- Do not manually pull or reload to hide a failed workflow. Preserve its diagnostics and repair the
+  failure through a normal follow-up commit.
 
 ## CSP And Security Header Constraints
 

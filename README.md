@@ -149,11 +149,13 @@ graph TD
   - 启用 Fail2Ban 服务，根据日志自动封禁暴力破解与异常请求
   - 维护 `ip-blacklist.conf`，结合 iptables/Nginx 规则屏蔽恶意 IP；该文件属于服务器本地运行态配置，不随 Git 仓库同步
 - **发布约定**：
-  - GitHub Actions 在 Pull Request、推送到 `master` 与手动触发时执行可移植的仓库结构检查与 pre-commit；CI 不连接生产服务器
+  - GitHub Actions 在 Pull Request、推送到 `master` 与手动触发时先执行可移植的仓库结构检查与 pre-commit；Pull Request 不部署
   - 仓库检查覆盖必需配置文件、脚本语法、绝对软链接契约、运行态黑名单边界与敏感文件排除，但不等同于 Nginx 语法或运行时验证
-  - 本地修改 Nginx 配置后先 commit/push 到仓库，服务器在 `/etc/nginx` 执行 `git pull --ff-only` 拉取最新配置
-  - 配置变更拉取后必须执行 `nginx -t`，通过后再 `systemctl reload nginx`
-  - 文档-only 更新只需要 `git pull --ff-only` 同步，不需要 `nginx -t` 或 reload
+  - 通过检查的 `master` 推送或 `master` 手动触发会把工作流的精确 SHA 快进同步到 `/etc/nginx`；不会部署模糊的“最新提交”
+  - 根配置/参数/MIME 文件及 `modules-enabled/`、`sites-available/`、`sites-enabled/`、`snippets/` 发生变化时，生产完整文件系统必须先通过 `nginx -t`，然后只 reload Nginx
+  - 工作流、脚本与文档-only 更新只同步，不执行 `nginx -t` 或 reload；手动输入 `force_reload=true` 可在同一 SHA 上显式验证语法和 reload 路径
+  - 自动发布要求生产 tracked worktree 干净，并在同步、验证及 reload 前后证明 `ip-blacklist.conf` 仍为 ignored/untracked 且内容不变
+  - 每次发布都会验证四个公开页面、后端健康端点和现有 iframe 安全策略；失败时保留工作流证据，通过后续正常提交修复，不以人工 pull/reload 掩盖失败
   - 不再直接覆盖整个 `/etc/nginx`，避免误覆盖 `ip-blacklist.conf`、证书、黑名单或服务器本地状态文件
 - **自定义错误页面**:
   - `404.html`
@@ -215,7 +217,7 @@ graph TD
 
 ### 故障排查
 
-> **重要提示**: 每次修改配置后，请运行 `nginx -t` 验证配置有效性后再重启服务
+> **重要提示**: 每次修改配置后，请运行 `nginx -t` 验证配置有效性后再 reload 服务
 
 具体步骤可以参考文档内容：📄 [NGINX Troubleshooting Guide](https://github.com/RendaZhang/nginx-conf/blob/master/docs/TROUBLESHOOTING.md#nginx-troubleshooting-guide)
 
@@ -284,7 +286,7 @@ graph TD
   pre-commit run --all-files
   ```
 
-- 详细边界见 📄 [Nginx Repository Validation](docs/TESTING.md)。CI 验证仓库结构，但由于可移植 checkout 不包含生产模块、证书、服务器本地 include 与绝对链接目标，配置变更仍必须在生产完整文件系统上通过 `nginx -t` 后才能 reload。
+- 详细边界见 📄 [Nginx Repository Validation](docs/TESTING.md)。CI 验证仓库结构；通过后，自动部署只对配置行为路径或显式 `force_reload` 在生产完整文件系统中运行 `nginx -t`，成功后 reload。
 
 > ✅ 所有提交必须通过 pre-commit 检查；CI 会阻止不符合规范的 PR。
 
