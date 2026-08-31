@@ -9,12 +9,14 @@
     - [使用建议](#%E4%BD%BF%E7%94%A8%E5%BB%BA%E8%AE%AE)
     - [BUG 记录格式要求](#bug-%E8%AE%B0%E5%BD%95%E6%A0%BC%E5%BC%8F%E8%A6%81%E6%B1%82)
     - [问题状态](#%E9%97%AE%E9%A2%98%E7%8A%B6%E6%80%81)
+  - [[2026-08-31] UFW SSH 限速与规则替换导致发布中断和主机锁外](#2026-08-31-ufw-ssh-%E9%99%90%E9%80%9F%E4%B8%8E%E8%A7%84%E5%88%99%E6%9B%BF%E6%8D%A2%E5%AF%BC%E8%87%B4%E5%8F%91%E5%B8%83%E4%B8%AD%E6%96%AD%E5%92%8C%E4%B8%BB%E6%9C%BA%E9%94%81%E5%A4%96)
   - [[2026-06-12] TLS 1.2 在 ECDSA 证书下握手失败](#2026-06-12-tls-12-%E5%9C%A8-ecdsa-%E8%AF%81%E4%B9%A6%E4%B8%8B%E6%8F%A1%E6%89%8B%E5%A4%B1%E8%B4%A5)
   - [[2026-06-12] 静态页面和资源缺少安全响应头](#2026-06-12-%E9%9D%99%E6%80%81%E9%A1%B5%E9%9D%A2%E5%92%8C%E8%B5%84%E6%BA%90%E7%BC%BA%E5%B0%91%E5%AE%89%E5%85%A8%E5%93%8D%E5%BA%94%E5%A4%B4)
   - [[2026-06-12] Astro hydration inline scripts 被 CSP 拦截](#2026-06-12-astro-hydration-inline-scripts-%E8%A2%AB-csp-%E6%8B%A6%E6%88%AA)
   - [[2026-06-14] Chat Widget iframe 被 CSP frame-src 拦截](#2026-06-14-chat-widget-iframe-%E8%A2%AB-csp-frame-src-%E6%8B%A6%E6%88%AA)
   - [[2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖](#2026-06-12-_astro-%E9%95%BF%E7%BC%93%E5%AD%98%E8%A2%AB%E9%80%9A%E7%94%A8%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90%E8%A7%84%E5%88%99%E8%A6%86%E7%9B%96)
   - [[2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化](#2026-06-12-%E9%9A%90%E8%97%8F%E6%95%8F%E6%84%9F%E8%B7%AF%E5%BE%84%E5%9B%9E%E9%80%80%E9%A6%96%E9%A1%B5%E4%B8%94-apex-%E5%9F%9F%E5%90%8D%E6%9C%AA%E8%A7%84%E8%8C%83%E5%8C%96)
+  - [[2026-06-28] 未知静态路径返回首页造成 soft-404](#2026-06-28-%E6%9C%AA%E7%9F%A5%E9%9D%99%E6%80%81%E8%B7%AF%E5%BE%84%E8%BF%94%E5%9B%9E%E9%A6%96%E9%A1%B5%E9%80%A0%E6%88%90-soft-404)
   - [[2025-07-07] HTTP/2 `net::ERR_HTTP2_PROTOCOL_ERROR` on `/chat` & `favicon.ico`](#2025-07-07-http2-neterr_http2_protocol_error-on-chat--faviconico)
   - [[2025-07-09] 缓存文件未生成与 "uninitialized variable" 警告](#2025-07-09-%E7%BC%93%E5%AD%98%E6%96%87%E4%BB%B6%E6%9C%AA%E7%94%9F%E6%88%90%E4%B8%8E-uninitialized-variable-%E8%AD%A6%E5%91%8A)
   - [[2025-07-09] 正则 `location` 中 `proxy_pass` 带 URI 导致启动失败](#2025-07-09-%E6%AD%A3%E5%88%99-location-%E4%B8%AD-proxy_pass-%E5%B8%A6-uri-%E5%AF%BC%E8%87%B4%E5%90%AF%E5%8A%A8%E5%A4%B1%E8%B4%A5)
@@ -27,7 +29,7 @@
 # NGINX Troubleshooting Guide
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: July 05, 2026, 14:48 (UTC+08:00)
+- **最后更新**: August 31, 2026 (UTC+08:00)
 
 ---
 
@@ -95,6 +97,63 @@
 - [x] [2026-06-14] Chat Widget iframe 被 CSP frame-src 拦截
 - [x] [2026-06-12] `/_astro/` 长缓存被通用静态资源规则覆盖
 - [x] [2026-06-12] 隐藏敏感路径回退首页且 apex 域名未规范化
+- [x] [2026-08-31] UFW SSH 限速与规则替换导致发布中断和主机锁外
+
+---
+
+## [2026-08-31] UFW SSH 限速与规则替换导致发布中断和主机锁外
+
+**环境**
+
+- 操作系统：Ubuntu 24.04
+- 相关组件：OpenSSH、UFW、GitHub Actions、`appleboy/scp-action`
+- 发布方式：前端构建后通过多个短 SSH/SCP 连接同步静态产物
+
+**症状 (Symptoms)**
+
+- SSH 加固和普通密钥登录通过后，前端同提交发布在 SCP 阶段超时。
+- 发布动作已删除目标静态目录并开始解包，后续清理连接被限速；首页短暂返回 403，主要静态
+  路由返回 404，而独立的后端健康接口仍为 200。
+- 尝试把 SSH 规则从 `limit` 改为 `allow` 后，新建 SSH 连接全部超时。
+
+**排查过程 (Diagnosis)**
+
+1. 后端部署只需要较少 SSH 连接，因此同一主机策略下可以成功；前端 SCP 动作会连续建立多个
+   独立连接，后续连接命中 `ufw limit 22/tcp`。
+2. 规则替换先执行了 `ufw insert 1 allow 22/tcp`。UFW 将同端口的现有 `limit` 视为重复并
+   跳过新增，随后无条件删除 `limit 22/tcp`，最终没有任何主机侧 SSH 放行规则。
+3. 预留的远端 `sleep` 进程不是可交互或可复用的控制连接，无法执行恢复命令。
+4. Nginx 和 CloudChat 服务本身保持运行；静态站点错误来自被中断的非原子文件发布，不是
+   Nginx 配置或后端故障。
+
+**根因 (Root Cause)**
+
+- `ufw limit` 与现有多连接部署模型不兼容，但前期只验证了单次 SSH 登录和后端发布，没有用
+  三条真实发布流水线验收网络策略。
+- UFW 对同端口 `allow`/`limit` 的去重语义未在删除旧规则前检查，规则替换不是原子的。
+- 恢复计划把“连接仍存在”误当成“连接仍可执行恢复命令”。
+
+**解决方案 (Fix)**
+
+1. 通过云平台支持和离线挂载系统盘恢复 SSH 入口。
+2. 按所有者决策关闭并禁用 UFW，由阿里云平台防火墙统一承担公网入口控制。
+3. 平台侧仅允许 TCP 22、80、443；从外部验证 CloudChat、数据存储和 PCP 端口不可达。
+4. 保留 root 公钥登录、禁用 password/keyboard-interactive 与未使用 forwarding，并保留
+   Fail2ban；未使用的 PCP 服务继续 inactive/disabled。
+5. 在 SSH 恢复后重跑原前端提交的发布，确认 SCP、发布、release 和 CDN 步骤全部成功，再
+   验证首页、Docs、Certifications、Chat、CSP 和后端健康。
+
+**经验总结 (Lessons Learned)**
+
+- 网络策略验收必须覆盖真实的前端、后端和 Nginx 发布，而不只是 `ssh` 握手。
+- 不要在未确认新规则已存在时删除旧 SSH 规则；先检查 `ufw status numbered` 和实际规则，
+  并把 UFW 的重复检测视为失败条件。
+- 任何锁外恢复通道都必须现场证明可以执行命令。非交互长连接不能替代云控制台、命令助手或
+  救援模式。
+- 主机防火墙与平台防火墙的责任必须单一且写入 runbook。当前架构选择平台防火墙，UFW 不得
+  被日常维护或自动部署顺手启用。
+- 删除目标目录后再上传不是原子发布；网络中断会直接造成静态站点不可用。零停机发布目录和
+  原子切换仍属于后续发布可靠性工作，不在本次安全修复中隐式展开。
 
 ---
 

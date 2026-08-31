@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Nginx Repository Validation](#nginx-repository-validation)
+  - [Production Edge Security Checks](#production-edge-security-checks)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Nginx Repository Validation
 
 The repository validation boundary is intentionally portable. Run the same checks locally that

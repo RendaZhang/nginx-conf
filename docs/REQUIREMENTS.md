@@ -81,8 +81,9 @@
   agent 与 tunnel forwarding。后续修改必须先证明双独立会话和主机本地定时回滚。
 - [x] `cloudchat.service` 已迁移到锁定的 `cloudchat` 系统账号、空 capability 边界和
   `127.0.0.1:5000`；规范单元由后端 exact-SHA workflow 验证、安装和回滚。
-- [x] 主机 UFW 已对 IPv4/IPv6 启用入站默认拒绝、出站默认允许；公网仅放行限速的
-  22/tcp 与 80/443/tcp。CloudChat、Redis、PostgreSQL、PgBouncer 和 PCP 端口不放行。
+- [x] 公网入口由阿里云平台防火墙统一控制，仅允许 22/tcp 与 80/443/tcp；主机 UFW 按所有者
+  决策保持 inactive/disabled，避免与多连接 SSH/SCP 自动发布冲突。CloudChat、Redis、
+  PostgreSQL、PgBouncer 和 PCP 端口不在平台侧放行，并通过外部探测验证不可达。
 - [x] 未使用的 `pmcd`、`pmlogger`、`pmproxy`、`pmie` 已停止并禁用，避免重新创建 wildcard
   监控监听；保留软件包以便显式回滚，不在本阶段做卸载。
 - [ ] 前端升级 Astro、调整 hydration 指令、引入新的 inline script 或 GitHub Actions 重新构建后，需复核 inline script hash 是否变化；中长期可继续评估 Astro 原生 CSP 能力，减少手工维护 Nginx hash allowlist。

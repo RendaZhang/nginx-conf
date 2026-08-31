@@ -160,18 +160,25 @@ production worktree, and verifies public routes, backend health, and frame polic
   `PermitRootLogin prohibit-password`, `PasswordAuthentication no`, and
   `KbdInteractiveAuthentication no`. X11, TCP, agent, and tunnel forwarding are disabled because
   the current deployment workflows do not require them.
-- UFW is active for IPv4 and IPv6 with default-deny inbound and default-allow outbound. The only
-  public inbound rules are rate-limited TCP 22 plus TCP 80 and 443. Do not expose CloudChat 5000,
-  Redis 6379, PostgreSQL 5432, PgBouncer 6432, PCP ports, or cache-purge paths.
+- The Alibaba Cloud platform firewall is the authoritative public ingress boundary. Its intended
+  allowlist is TCP 22, 80, and 443 only. Host UFW is intentionally inactive and disabled after a
+  deployment lockout incident; do not enable or change it without a separately reviewed design,
+  provider-console recovery access, and end-to-end deployment proof.
+- Do not expose CloudChat 5000, Redis 6379, PostgreSQL 5432, PgBouncer 6432, PCP ports, or
+  cache-purge paths. Verify this from outside the provider network instead of inferring it from
+  local listeners alone.
 - Unused Performance Co-Pilot services (`pmcd`, `pmlogger`, `pmproxy`, and `pmie`) are disabled and
   inactive so they cannot recreate wildcard monitoring listeners. Do not re-enable them as an
   incidental dependency or monitoring change.
-- SSH, UFW, and PCP state are host-owned, not applied by the Nginx workflow. Any future change is
-  lockout-sensitive: preserve one independent key session, prove a second session, test and arm a
-  host-local timed rollback, validate `sshd -t`, and cancel rollback only after fresh key login,
-  firewall/listener, service, and public-route checks pass.
-- Provider firewall behavior is defense in depth only and was not independently inspected. Never
-  weaken the host policy based on an assumption that the provider blocks a port.
+- SSH, provider-firewall, UFW, and PCP state are host-owned, not applied by the Nginx workflow. Any
+  future access-control change is lockout-sensitive: prove console/rescue recovery first, validate
+  `sshd -t`, preserve an actually interactive recovery channel, and run all three deployment
+  workflows before accepting the change. A long-running non-interactive SSH command is not a
+  recovery channel.
+- Never replace a UFW `limit` rule by adding an `allow` rule and then deleting `limit` unless the
+  new rule is visibly present first. UFW may treat both rules as duplicates and leave no SSH rule.
+- Keep provider rule identifiers, addresses, account details, and support-case data out of this
+  public repository.
 
 ## Documentation Rules
 

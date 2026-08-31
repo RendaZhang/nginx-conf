@@ -488,17 +488,18 @@ systemd + OOM
 
 ## 安全基线
 
-- **防火墙**：UFW 对 IPv4/IPv6 启用入站默认拒绝、出站默认允许；仅限速放行 22/tcp，并
-  放行 80/443/tcp。CloudChat 5000、Redis 6379、PostgreSQL 5432、PgBouncer 6432 与 PCP
-  监控端口没有公网规则。
+- **防火墙**：阿里云平台防火墙是唯一公网入口策略，仅允许 22/tcp 与 80/443/tcp；主机 UFW
+  保持 inactive/disabled。CloudChat 5000、Redis 6379、PostgreSQL 5432、PgBouncer 6432
+  与 PCP 监控端口不在平台侧放行，并保持回环监听或关闭。
 - **SSH 加固**：保留 root 公钥自动发布，但使用 `PermitRootLogin prohibit-password`、
   `PasswordAuthentication no`、`KbdInteractiveAuthentication no`；关闭 X11、TCP、agent
   和 tunnel forwarding，并收紧认证尝试次数与登录宽限时间。
 - **监控监听**：未使用的 `pmcd`、`pmlogger`、`pmproxy`、`pmie` 服务保持 inactive/disabled，
   防止 PCP 重新绑定 wildcard 监控端口。若未来确需 PCP，先设计 loopback/认证边界，不要直接
   恢复默认公网监听。
-- **锁外恢复**：任何 SSH/UFW 变更都要保留原独立密钥会话，证明第二个非复用会话，先测试并
-  武装主机本地定时回滚，再修改和验证。云安全组仅作为额外防御，不能替代主机规则。
+- **锁外恢复**：任何 SSH 或入口防火墙变更前，必须先证明阿里云控制台/救援模式可用，并保留
+  一个真正可执行命令的交互会话；远端 `sleep` 进程不构成恢复通道。修改后要验证新密钥连接、
+  三条 GitHub Actions 发布、外部端口、页面和健康检查。未经新的专项设计，不要重新启用 UFW。
 - **Secrets 管理**：全部转至 `/etc/cloudchat/cloudchat.env`（0600）
 - **TLS**：自动续期成功率监控与失败告警
 
@@ -509,14 +510,17 @@ sshd -t
 sshd -T | grep -E \
   '^(permitrootlogin|pubkeyauthentication|passwordauthentication|kbdinteractiveauthentication|x11forwarding|allowtcpforwarding|allowagentforwarding) '
 ufw status verbose
+systemctl is-enabled ufw
 systemctl is-active ssh fail2ban nginx cloudchat redis-server postgresql pgbouncer
 systemctl is-active pmcd pmlogger pmproxy pmie
 systemctl is-enabled pmcd pmlogger pmproxy pmie
 ss -H -ltn
 ```
 
-验收必须从新连接证明 root 公钥可用，并从客户端明确禁用 public key 后证明 password/
-keyboard-interactive 不可用。不要在未武装定时回滚时用当前唯一 SSH 会话测试认证配置。
+`ufw status verbose` 当前应为 `inactive`，`systemctl is-enabled ufw` 应为 `disabled`。验收必须
+从新连接证明 root 公钥可用，并从客户端明确禁用 public key 后证明 password/
+keyboard-interactive 不可用；还要从外部证明只有 22/80/443 可达。不要在未证明控制台/救援
+恢复能力时改变 SSH 或入口防火墙。
 
 ---
 
@@ -578,7 +582,8 @@ curl -k -I --resolve rendazhang.com:443:127.0.0.1 https://rendazhang.com/
 
 | 日期         | 变更内容                                                                                                          | 服务           | 版本/提交     | 操作人 | 回滚方式                |                     |
 | ---------- | ------------------------------------------------------------------------------------------------------------- | ------------ | --------- | --- | ------------------- | ------------------- |
-| 2026-08-30 | root SSH 改为仅公钥并禁用未使用 forwarding；UFW 双栈仅允许 22/80/443；停止禁用 wildcard PCP 服务 | ssh/ufw/pcp | host state | | 在双会话和定时回滚保护下恢复 SSH drop-in、UFW 状态与 PCP enabled/active 状态 | |
+| 2026-08-31 | `ufw limit` 与多连接 SCP 冲突后替换规则导致 SSH 锁外；经云平台救援恢复 22，按所有者决策停用 UFW，并由平台防火墙仅允许 22/80/443；重跑前端发布恢复静态站点 | ssh/firewall/frontend | host state | | 通过云平台控制台/救援修复入口规则；详见 `TROUBLESHOOTING.md` | |
+| 2026-08-30 | root SSH 改为仅公钥并禁用未使用 forwarding；停止并禁用 wildcard PCP 服务 | ssh/pcp | host state | | 在云平台恢复通道下恢复 SSH drop-in 与 PCP enabled/active 状态 | |
 | 2025-08-12 | Redis 限额至 160M，关闭 RDB/AOF；优化 conf（allkeys-lru 等）                                                              | redis-server |           |     | 还原 conf 与 MemoryMax |                     |
 | 2025-08-12 | CloudChat 改用 EnvironmentFile，OOM=+100，MemoryMax=300M                                                          | cloudchat    |           |     | 还原 systemd 单元并重启    |                     |
 | 2025-08-12 | 安装并配置 PostgreSQL（shared\_buffers=96MB 等精简参数）                                                                  | postgresql   | 16        |     | 停止服务/还原配置           |                     |

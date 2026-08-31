@@ -277,21 +277,16 @@ vi ~/.ssh/authorized_keys
     sudo sysctl -p
     ```
 
-云安全组与主机防火墙是两层边界，不能因为云安全组当前阻断端口就省略主机策略。启用 UFW
-前，先保留一个独立 SSH 会话、证明第二个密钥会话，并武装经过测试的主机本地定时回滚；然后使用：
+当前生产边界由阿里云平台防火墙负责，主机 UFW 保持 `inactive` 且服务为 `disabled`。平台只应
+允许公网 TCP 22、80、443；CloudChat 5000、Redis 6379、PostgreSQL 5432、PgBouncer 6432
+和 PCP 监控端口必须保持平台侧拒绝，同时在主机上保持回环监听或关闭。迁移前先在目标平台
+建立同等规则，并从外部网络验证开放和关闭端口，不能只看主机监听状态。
 
-```bash
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw limit 22/tcp # SSH
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw --force enable
-```
-
-确认新建的独立密钥会话、80/443、公网页面和健康检查全部通过后，才能取消回滚。不要为
-5000、6379、5432、6432 或 PCP 监控端口添加 UFW 或云安全组放行规则；这些端口应保持回环
-监听或关闭。
+不要在迁移过程中顺手启用 UFW。当前自动发布会在一次发布中建立多个短 SSH/SCP 连接，
+`ufw limit 22/tcp` 曾使后续连接超时并中断静态文件发布。若未来确需恢复主机防火墙，必须先在
+隔离实例复现三条发布流水线，证明云控制台/救援模式可恢复，并设计不会在替换 SSH 规则时留下
+空窗的原子步骤。尤其不要先执行 `ufw allow 22/tcp` 后无条件删除现有 `limit 22/tcp`：UFW
+可能把两者视为重复规则而跳过新增，随后删除唯一 SSH 入口。
 
 #### 删除服务器的自带服务
 
