@@ -87,10 +87,12 @@ modules, certificates, absolute link targets, or server-local includes.
   that `~/.local/share/mise/shims` is on `PATH` and run `mise doctor`. Do not
   add machine-specific runtime paths to committed Nginx docs or config.
 
-Production delivery is owned by the `Nginx CI` workflow after repository validation passes:
+Production delivery is automatic after a validated `master` push. Inspect that exact commit's
+`Nginx CI` run rather than dispatching a forced reload for routine delivery:
 
 ```bash
-gh workflow run nginx-ci.yml --ref master -f force_reload=true
+gh run list --workflow nginx-ci.yml --branch master --event push --commit "$(git rev-parse HEAD)" --limit 1
+gh run view <matching-run-id> --log
 ```
 
 Pull Requests remain CI-only. A `master` push or `master` manual dispatch synchronizes the exact
@@ -107,6 +109,10 @@ production worktree, and verifies public routes, backend health, and frame polic
 - Pull Requests never deploy. Manual `master` dispatches use the same exact-SHA path and can set
   `force_reload=true` for an explicit syntax/reload check.
 - Workflow, script, and documentation-only updates do not run `nginx -t` or reload unless forced.
+- Routine pushes need no separate manual SSH/pull/reload step. Reserve `force_reload=true` for
+  an explicitly requested syntax/reload check, not for documentation synchronization.
+- For cross-repository delivery, finish the current repository's exact-commit workflow and
+  production verification before pushing the next repository.
 - Never copy an entire local directory over `/etc/nginx`; use Git pull so ignored
   runtime files remain untouched.
 - Do not manually pull or reload to hide a failed workflow. Preserve its diagnostics and repair the
