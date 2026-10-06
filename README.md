@@ -272,6 +272,14 @@ graph TD
 
 ## 🤝 贡献指南
 
+日常维护使用轻量主干流程：文档和小修复可直接在干净且同步的 `master` 上完成；
+Nginx 行为、部署和较大配置变更使用短分支，验证后快进合入并发布，不要求每次创建 PR。
+每个 Slice 开始时确认状态、远程基线和任务归属；结束时核对精确提交的部署结果，
+再删除已合并且无人使用的本地/远程分支。并行写入需独立 worktree。
+完整首尾检查与 Dependabot 清理规则见 [AGENTS.md](AGENTS.md#git-workflow-and-slice-cleanup)。
+分支清理不触及服务器运行态黑名单、证书、备份或访问配置。
+外部贡献仍可使用以下 Fork/PR 方式。
+
 - Fork & clone this repo.
 - 进入虚拟环境：
    ```bash
