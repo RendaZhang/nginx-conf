@@ -9,6 +9,8 @@
     - [**后端服务**](#%E5%90%8E%E7%AB%AF%E6%9C%8D%E5%8A%A1)
     - [**前端代码**](#%E5%89%8D%E7%AB%AF%E4%BB%A3%E7%A0%81)
   - [Nginx 配置说明](#nginx-%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E)
+    - [静态文件服务](#%E9%9D%99%E6%80%81%E6%96%87%E4%BB%B6%E6%9C%8D%E5%8A%A1)
+    - [Chat 流式转发](#chat-%E6%B5%81%E5%BC%8F%E8%BD%AC%E5%8F%91)
     - [关键配置功能](#%E5%85%B3%E9%94%AE%E9%85%8D%E7%BD%AE%E5%8A%9F%E8%83%BD)
   - [Nginx 服务器配置](#nginx-%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE)
     - [版本兼容表](#%E7%89%88%E6%9C%AC%E5%85%BC%E5%AE%B9%E8%A1%A8)
@@ -49,6 +51,8 @@
 
 更多运维细节请查阅 📄 [服务器配置运行手册](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SERVER_RUNBOOK.md#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8C)。
 
+查看本站的[静态文件服务](#static-delivery)和 [Chat 流式转发](#chat-streaming)。
+
 > 重量级解决方案可参考我的云原生项目：📁 [Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
 ---
@@ -62,7 +66,7 @@
   - 1 GB RAM
   - 40 GB SSD
 - **Web 服务器**: Nginx + Gunicorn(Gevent)
-- **参考架构**：Web (Frontend (Astro + React)) → Server (Ubuntu → Nginx → systemd → Gunicorn + Gevent → Backend (Flask APP))
+- **参考架构**：Nginx 提供 Astro 构建的静态文件，并将 CloudChat API 请求转给 Gunicorn 上的 Flask。
 
 ### 架构示意图
 
@@ -73,12 +77,14 @@ graph TD
   client[Browser]
   cache[(cloudchat_cache)]
   server[Nginx]
+  static[Astro static files]
   gunicorn[Gunicorn]
   flask[Flask App]
   client -->|HTTPS| server
-  server -->|Proxy| gunicorn
+  server -->|Pages and assets| static
+  server -->|CloudChat API| gunicorn
   gunicorn --> flask
-  server --> cache
+  server -->|Public test route| cache
 ```
 
 ### **后端服务**
@@ -111,6 +117,31 @@ graph TD
 
 > ⚠ **注意**: 证书目录 (`cert/`, `ssl/`)、备份文件 (`backup/`)、IDE 配置 (`.idea/`) 与服务器本地黑名单 (`ip-blacklist.conf`) 已通过 `.gitignore` 排除
 
+<a name="static-delivery"></a>
+
+### 静态文件服务
+
+Nginx 从 `/var/www/html` 提供前端发布的 Astro 静态文件。浏览器打开 `/` 或 `/deepseek_chat/` 时，
+Nginx 在对应目录查找构建生成的 `index.html`。通用路径使用 `try_files $uri $uri/ =404`，缺失路径返回
+HTTP 404。[站点根目录](sites-available/rendazhang.conf#L57-L59) · [静态路由规则](sites-available/rendazhang.conf#L182-L191)
+
+`location ^~ /_astro/` 优先匹配构建生成的指纹资源，返回一年 `immutable` 缓存。
+通用 CSS、JS 和图片等静态资源返回 30 天 `immutable` 缓存。[静态资源规则](sites-available/rendazhang.conf#L154-L175)
+
+<a name="chat-streaming"></a>
+
+### Chat 流式转发
+
+| 路径 | 用途 |
+| --- | --- |
+| `GET /deepseek_chat/` | 浏览器打开独立 Chat 页面或同源 iframe，由 Nginx 提供静态 HTML。 |
+| `POST /cloudchat/deepseek_chat` | 浏览器提交问题，命中 Nginx 的专用精确匹配 `location = /cloudchat/deepseek_chat`。 |
+| `POST /deepseek_chat` | `proxy_pass` 将原请求方法与请求体转发到 Gunicorn 上的 Flask 路由。 |
+
+专用 location 的 `proxy_buffering off` 作用于上游响应。Nginx 接收 Flask 返回的流式 JSON 行数据后随到随转，
+让浏览器在回答生成期间就能接收内容。客户端请求体仍使用默认的 `proxy_request_buffering on`。流式路由未启用代理缓存，
+动态代理缓存只用于精确 `/cloudchat/test`。[Chat 代理规则](sites-available/rendazhang.conf#L133-L152) · [Nginx 响应缓冲指令](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_buffering)
+
 ### 关键配置功能
 
 关键配置功能的文件：`nginx.conf`，`sites-available/rendazhang.conf`。
@@ -129,7 +160,6 @@ graph TD
   - `/cloudchat/` 路径代理到 `http://$BackendIP:$Port/`
   - `proxy_read_timeout` 设置需要跟 Gunicorn 的 `timeout` 设置对齐
 - **缓存**：
-  - `proxy_buffering off` 等设置以支持流式传输（注意：关闭后 `proxy_cache` 将失效）
   - 缓存文件在指定 `inactive` 时间内未被访问会自动清理，目录超过 `max_size` 时也会淘汰旧文件
   - 动态缓存由 `cloudchat_cache` 控制，缓存键为 `$host$request_uri`
   - 动态缓存采用白名单：只缓存公开且与用户无关的精确 `/cloudchat/test`；认证、通用 API 与流式 Chat 不启用代理缓存
@@ -139,8 +169,6 @@ graph TD
     - `$host`：主机名
     - `$request_uri`：路径
     - 缓存键示例：`www.rendazhang.com/cloudchat/test`
-  - 通用静态资源使用 `Cache-Control: public, max-age=2592000, immutable` 控制 30 天缓存。
-  - 指纹文件位于 `/_astro/` 目录，使用 `location ^~ /_astro/` 避免被通用静态资源正则抢先匹配，缓存时长 365 天，利用哈希文件名实现长期缓存。
 - **限速与流量控制**：
   - 通用 CloudChat API 使用每客户端 `flask_limit`（5 r/s）
   - 付费流式 `/cloudchat/deepseek_chat` 使用独立 `chat_limit`（10 r/m，`burst=3`）；超限统一返回 429
