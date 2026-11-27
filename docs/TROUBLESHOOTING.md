@@ -51,6 +51,8 @@
 
 如 Indigo 握手收到个人站证书，核对客户端 SNI 和 Indigo 的 `ssl_certificate` 路径。若未知 SNI 收到 Indigo 证书，核对个人站裸域 443 的 `default_server`。若续期成功但握手仍出示旧证书，先比对在盘与握手叶证书，再按时间检查 deploy hook 的可执行权限、实际 lineage 匹配、配置测试、重载和成功日志。[Indigo 单证书续期演练](SERVER_RUNBOOK.md#indigo-renewal)
 
+若 Indigo 顾问目录能打开但查询失败，从源站分别核对 `/var/www/indigo/current/practice/index.html`、`http://127.0.0.1:5101/api/health` 和公网 `/api/advisers`。只有站点标识通过不足以证明业务 API 正常。
+
 ### 涵盖问题类型
 
 ✅ HTTP/2 协议兼容性问题

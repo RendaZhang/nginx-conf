@@ -54,7 +54,7 @@
 | 站点 | 请求入口 | 内容与路由归属 |
 | --- | --- | --- |
 | 个人站 `rendazhang.com`、`www.rendazhang.com` | IPv4 默认 HTTP 入口将普通请求 301 到 HTTPS www，HTTPS 裸域也转至 www。 | 前端仓发布 `/var/www/html`，www 的 `/cloudchat/` 由个人站反代。 |
-| Indigo `indigo.rendazhangisthebest.top` | IPv4 HTTP 直接提供 ACME 验证文件，普通请求 301 到本域 HTTPS 并保留路径和查询串。具名 HTTPS 提供静态占位页。 | Indigo 内容维护者发布 `/var/www/indigo/current`。主机运维维护持久验证目录 `/var/www/acme-indigo` 和 Indigo 独立证书。HTTPS 的 `/cloudchat/` 返回 404。 |
+| Indigo `indigo.rendazhangisthebest.top` | IPv4 HTTP 直接提供 ACME 验证文件，普通请求 301 到本域 HTTPS 并保留路径和查询串。具名 HTTPS 提供顾问目录、双语练习，并将 `/api/` 转发至本机 Flask。 | Indigo 内容维护者发布 `/var/www/indigo/current`。主机运维维护持久验证目录 `/var/www/acme-indigo` 和 Indigo 独立证书。HTTPS 的 `/cloudchat/` 返回 404。 |
 
 个人站裸域显式保留默认 IPv4 443 与个人站证书。两个站点的第一跳验收、默认证书检查与 Indigo 单证书续期演练见[运行手册](docs/SERVER_RUNBOOK.md#indigo-https)。个人站实现见[静态文件服务](#static-delivery)和 [Chat 流式转发](#chat-streaming)。
 

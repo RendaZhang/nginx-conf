@@ -165,7 +165,7 @@ Indigo 与个人站共享 Nginx 的 IPv4 80/443。Indigo 按精确域名分流�
 
 | 合入前由谁确认 | 必须准备的资源 |
 | --- | --- |
-| Indigo 内容维护者 | `/var/www/indigo/current` 指向 `/var/www/indigo/releases/<release>`，`/var/www/indigo/current/index.html` 含唯一标记 `indigo-placeholder-v1`。发布、切换和清理仅在 Indigo 内容树内进行。 |
+| Indigo 内容维护者 | `/var/www/indigo/current` 指向应用 release 的公开 web 目录（回退占位版使用其静态根），`index.html` 包含稳定标识 `data-site="indigo-lab"`。发布、切换和清理仅在 Indigo 内容树内进行。 |
 | 主机运维 | 持久文件 `/var/www/acme-indigo/.well-known/acme-challenge/indigo-deploy-probe` 的内容与 `printf '%s\n' 'indigo-acme-probe-v1'` 输出逐字节一致（ASCII，末尾恰好一个 LF）。切换内容版本时保留该文件。Nginx 运行用户应能遍历两个目录树并读取首页与探针。 |
 | 入口维护者 | 仓库管理 `sites-available/indigo.conf`、启用软链接、个人站的显式 443 默认归属和发布检查。确认缺失探针确实不存在，并核对下述证书前置条件。合入 `master` 将触发生产交付。 |
 
@@ -190,10 +190,12 @@ curl --disable --noproxy '*' --no-location --resolve "${indigo_host}:80:127.0.0.
 | Indigo HTTP 普通路径，如 `/check?source=release` | 301，唯一的 `Location` 为 `https://indigo.rendazhangisthebest.top/check?source=release`。 |
 | Indigo HTTP `/.well-known/acme-challenge/indigo-deploy-probe` | 200，无 `Location`，正文与上述 `printf` 输出逐字节相同。 |
 | Indigo HTTP `/.well-known/acme-challenge/indigo-deploy-probe-missing` | 404。 |
-| Indigo HTTPS `/` | 域名及证书链验证通过，200、无 `Location`，正文含 `indigo-placeholder-v1`。 |
+| Indigo HTTPS `/` | 域名及证书链验证通过，200、无 `Location`，首页 HTML 含 `data-site="indigo-lab"`。 |
 | Indigo HTTPS `/indigo-deploy-probe-missing`、`/cloudchat/` | 均返回 404。 |
 | 个人站 www 和裸域 HTTPS `/` | www 直接 200，正文没有 Indigo 标记。裸域直接 301，`Location` 为 `https://www.rendazhang.com/`。 |
 | 未知 HTTP Host、同时使用未知 SNI/Host 的 HTTPS | 普通请求直接 301 到个人站 www，保留路径和查询串。未知及无 SNI 的 TLS 握手均出示个人站默认证书。 |
+
+业务版的 `/advisers/` 和 `/practice/` 使用各自的静态入口。对目录、档案和练习的 HTML 请求，Nginx 先向 Flask 的内部会话检查发起子请求。未登录时就地提供登录表单并保留地址中的练习、筛选和语言，受保护 HTML 禁止缓存。业务 API 由 Flask 单独校验会话。只有当前内容版本包含练习入口时，HTTPS `/api/` 才会转发至 `127.0.0.1:5101`。应用发布先核对回环健康，再切换网页，另行以同名查询、团队过滤及档案响应验证业务。回退到带稳定标识的占位页后，API 路径返回 404。个人站的 CloudChat 继续使用其原回环端口。
 
 比对默认证书时，可用 `openssl s_client -connect 127.0.0.1:443` 分别加上 `-servername rendazhang.com`、`-servername unmatched.invalid` 和 `-noservername`，将各自叶证书交给 `openssl x509 -noout -sha256 -fingerprint`。三个指纹应相同。个人站原有页面、后端和 iframe 检查继续执行。
 

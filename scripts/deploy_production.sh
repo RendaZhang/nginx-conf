@@ -201,7 +201,7 @@ check_frame_policy "/deepseek_chat/"
 readonly INDIGO_HOST="indigo.rendazhangisthebest.top"
 readonly INDIGO_HTTP="http://$INDIGO_HOST"
 readonly INDIGO_HTTPS="https://$INDIGO_HOST"
-readonly INDIGO_MARKER="indigo-placeholder-v1"
+readonly INDIGO_MARKER='data-site="indigo-lab"'
 probe_dir="$(mktemp -d)"
 readonly probe_dir
 trap 'rm -rf -- "$probe_dir"' EXIT

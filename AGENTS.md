@@ -68,7 +68,8 @@ document.
 - Backend code is managed separately in `/opt/cloudchat`.
 - Indigo's exact IPv4 HTTP host serves ACME challenges from its persistent
   webroot and redirects ordinary requests to its own HTTPS host. The named HTTPS
-  site serves static content using Indigo's own certificate. The personal site's
+  site serves the adviser directory and guided practice with Indigo's own certificate.
+  Only this HTTPS host proxies `/api/` to the Indigo app on loopback port 5101. The personal site's
   apex owns the explicit IPv4 TLS default. Keep its certificate, redirect and
   CloudChat routing on their existing hosts.
 - This repo owns the Indigo vhost, enablement symlink and deploy checks.
