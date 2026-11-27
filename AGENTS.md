@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Last updated: 2026-10-06
+Last updated: 2026-11-27
 
 This file gives AI coding agents the project context needed to work safely in the
 `nginx-conf` operations repository. The repository is public, so do not add
@@ -11,7 +11,7 @@ document.
 ## Project Role
 
 - This repository mirrors the production Nginx configuration for
-  `www.rendazhang.com`.
+  `www.rendazhang.com` and defines the proposed named HTTP site for Indigo.
 - It documents reverse proxy, static serving, TLS, CSP/security headers, cache
   behavior, and small-server operations.
 - Related repositories:
@@ -66,6 +66,17 @@ document.
 - Static frontend files are served from `/var/www/html`, but that directory is
   deployed by the frontend GitHub Actions workflow and is not this Git worktree.
 - Backend code is managed separately in `/opt/cloudchat`.
+- The Indigo HTTP proposal adds one exact IPv4 port 80 host,
+  `indigo.rendazhangisthebest.top`. Keep the personal site's default HTTP
+  listener, its two TLS blocks and its CloudChat proxy under their existing ownership.
+- This repo owns the Indigo vhost, enablement symlink and deploy checks.
+  The Indigo content maintainer owns releases under `/var/www/indigo/releases/`
+  and the `current` symlink. The host operator owns the persistent ACME webroot
+  at `/var/www/acme-indigo`. Keep both trees outside the personal frontend release.
+- Before merging an Indigo enablement change to `master`, confirm the page,
+  readable probe fixture, missing paths and release window with their owners.
+  After deployment, validate the first HTTP response at loopback with the Indigo Host. See the
+  [Indigo HTTP acceptance contract](docs/SERVER_RUNBOOK.md#indigo-http).
 
 ## Files That Must Not Be Published Or Overwritten
 

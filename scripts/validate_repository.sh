@@ -64,6 +64,9 @@ expected_link_target() {
     modules-enabled/70-mod-stream-geoip2.conf)
       printf '%s' '/usr/share/nginx/modules-available/mod-stream-geoip2.conf'
       ;;
+    sites-enabled/indigo.conf)
+      printf '%s' '/etc/nginx/sites-available/indigo.conf'
+      ;;
     sites-enabled/rendazhang.conf)
       printf '%s' '/etc/nginx/sites-available/rendazhang.conf'
       ;;
@@ -83,6 +86,7 @@ required_files=(
   nginx.conf
   proxy_params
   scgi_params
+  sites-available/indigo.conf
   sites-available/rendazhang.conf
   snippets/fastcgi-php.conf
   snippets/security-headers.conf
@@ -120,6 +124,7 @@ expected_links=(
   modules-enabled/50-mod-mail.conf
   modules-enabled/50-mod-stream.conf
   modules-enabled/70-mod-stream-geoip2.conf
+  sites-enabled/indigo.conf
   sites-enabled/rendazhang.conf
 )
 

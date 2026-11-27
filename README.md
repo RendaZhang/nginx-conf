@@ -37,7 +37,7 @@
 # Nginx Configuration for rendazhang.com
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: July 05, 2026, 14:48 (UTC+08:00)
+- **最后更新**: 2026-11-27（UTC+08:00）
 
 ---
 
@@ -51,7 +51,12 @@
 
 更多运维细节请查阅 📄 [服务器配置运行手册](https://github.com/RendaZhang/nginx-conf/blob/master/docs/SERVER_RUNBOOK.md#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%85%8D%E7%BD%AE%E8%BF%90%E8%A1%8C%E6%89%8B%E5%86%8C)。
 
-查看本站的[静态文件服务](#static-delivery)和 [Chat 流式转发](#chat-streaming)。
+| 站点 | 请求入口 | 内容与路由归属 |
+| --- | --- | --- |
+| 个人站 `rendazhang.com`、`www.rendazhang.com` | IPv4 默认 HTTP 入口将普通请求 301 到 HTTPS www，HTTPS 裸域也转至 www。 | 前端仓发布 `/var/www/html`，www 的 `/cloudchat/` 由个人站反代。 |
+| Indigo（HTTP 草案）`indigo.rendazhangisthebest.top` | 精确匹配该 Host 的 IPv4 HTTP 80，直接提供占位页。 | Indigo 内容维护者发布 `/var/www/indigo/current`，主机运维维护持久 ACME 验证目录 `/var/www/acme-indigo`。`/cloudchat/` 返回 404。 |
+
+Indigo 的 HTTPS 与证书属于后续变更。合入前的文件约定和上线后的第一跳验收见[运行手册](docs/SERVER_RUNBOOK.md#indigo-http)。个人站实现见[静态文件服务](#static-delivery)和 [Chat 流式转发](#chat-streaming)。
 
 > 重量级解决方案可参考我的云原生项目：📁 [Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
@@ -148,7 +153,7 @@ HTTP 404。[站点根目录](sites-available/rendazhang.conf#L57-L59) · [静态
 
 - **网站根目录**: `/var/www/html`
 - **HTTP → HTTPS 重定向**:
-  - 所有 HTTP 请求 (端口 80) 自动重定向到 canonical HTTPS 主机 `https://www.rendazhang.com`
+  - 个人站默认 HTTP 入口的普通请求重定向到 canonical HTTPS 主机 `https://www.rendazhang.com`
   - `https://rendazhang.com/*` 统一 301 到 `https://www.rendazhang.com/*`
 - **SSL 设置**:
   - 由 Certbot 自动管理
@@ -225,7 +230,7 @@ HTTP 404。[站点根目录](sites-available/rendazhang.conf#L57-L59) · [静态
 
 - **主目录**：`/usr/sbin/nginx`
 - **配置**：`/etc/nginx`
-- **静态站点**：`/var/www/html`
+- **个人站静态目录**：`/var/www/html`
 - **缓存**：`/var/cache/nginx`（与 CentOS 7 相同）
 - **运行用户**：`www-data`
 
