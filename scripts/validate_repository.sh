@@ -91,6 +91,7 @@ required_files=(
   snippets/fastcgi-php.conf
   snippets/security-headers.conf
   snippets/snakeoil.conf
+  snippets/ssl-policy.conf
   snippets/ssl-rendazhang.conf
   uwsgi_params
 )

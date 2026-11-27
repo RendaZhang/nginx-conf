@@ -157,36 +157,75 @@ systemd + OOM
 > 上述示例仅展示核心配置，完整文件位于 `/etc/nginx/sites-available/<site>`。
 
 <a name="indigo-http"></a>
+<a name="indigo-https"></a>
 
-**Indigo 首次启用 IPv4 HTTP（草案）**
+**Indigo 具名 HTTP 和 HTTPS**
 
-本阶段仅为 `indigo.rendazhangisthebest.top` 增加具名 HTTP 入口。个人站继续拥有 80 的默认入口、现有 443 与 CloudChat。Indigo 的 HTTPS、证书与后端分别留待后续阶段。Draft PR 只运行 CI，合入 `master` 会触发生产交付。
+Indigo 与个人站共享 Nginx 的 IPv4 80/443。Indigo 按精确域名分流，使用独立证书和静态目录。个人站裸域的 443 显式声明 `default_server`，保留未知 SNI 和无 SNI 客户端收到的个人站证书。CloudChat 仍由个人站 www 提供。
 
 | 合入前由谁确认 | 必须准备的资源 |
 | --- | --- |
 | Indigo 内容维护者 | `/var/www/indigo/current` 指向 `/var/www/indigo/releases/<release>`，`/var/www/indigo/current/index.html` 含唯一标记 `indigo-placeholder-v1`。发布、切换和清理仅在 Indigo 内容树内进行。 |
 | 主机运维 | 持久文件 `/var/www/acme-indigo/.well-known/acme-challenge/indigo-deploy-probe` 的内容与 `printf '%s\n' 'indigo-acme-probe-v1'` 输出逐字节一致（ASCII，末尾恰好一个 LF）。切换内容版本时保留该文件。Nginx 运行用户应能遍历两个目录树并读取首页与探针。 |
-| 入口维护者 | 仓库管理 `sites-available/indigo.conf`、对应启用软链接和 HTTP 检查。确认下表两个缺失文件确实不存在，并在内容就绪、发布负责人和窗口确认后合入。发布流水线只校验这些文件，预置目录和内容由相应维护者负责。 |
+| 入口维护者 | 仓库管理 `sites-available/indigo.conf`、启用软链接、个人站的显式 443 默认归属和发布检查。确认缺失探针确实不存在，并核对下述证书前置条件。合入 `master` 将触发生产交付。 |
 
-经授权发布后，从源站回环地址发送 GET，保留准确 Host。以下首页请求会显示第一跳状态、响应头和正文。
+首次启用 HTTPS 前，从公网 GET 上述 HTTP 探针，确认第一跳 200、无 `Location`，且正文逐字节正确。主机运维使用 Certbot `certonly --webroot`，为单个域名 `indigo.rendazhangisthebest.top` 申请独立证书，webroot 取 `/var/www/acme-indigo`。核对 Certbot 报告的实际 Certificate Name、`live` 目录及叶证书的 SAN、签发者和有效期，再使 443 配置引用该目录的 `fullchain.pem` 和 `privkey.pem`。已存在合适证书时复用其 lineage。
+
+Indigo 的 Certificate Name 为 `indigo.rendazhangisthebest.top`，其链和私钥位于 `/etc/letsencrypt/live/indigo.rendazhangisthebest.top/`。两站共用 `snippets/ssl-policy.conf` 的 TLS 参数，各自引用独立证书。
+
+**发布后的第一跳验收**
+
+从源站回环发送 GET，用域名构造 URL 以携带正确的 Host 和 TLS SNI。再从公网以相同路径验证解析、信任链和响应。下例检查 HTTPS 首页及 HTTP 的路径和查询串。
 
 ```bash
 indigo_host=indigo.rendazhangisthebest.top
+curl --disable --noproxy '*' --no-location --resolve "${indigo_host}:443:127.0.0.1" \
+  --silent --show-error --include "https://${indigo_host}/"
 curl --disable --noproxy '*' --no-location --resolve "${indigo_host}:80:127.0.0.1" \
-  --silent --show-error --include "http://${indigo_host}/"
+  --silent --show-error --include "http://${indigo_host}/check?source=release"
 ```
 
-| Indigo HTTP 请求路径 | 第一跳验收 |
+| 请求 | 第一跳验收 |
 | --- | --- |
-| `/` | 直接 200、无 `Location`，正文含 `indigo-placeholder-v1`。 |
-| `/.well-known/acme-challenge/indigo-deploy-probe` | 直接 200、无 `Location`，正文与上述 `printf` 输出逐字节相同。 |
-| `/.well-known/acme-challenge/indigo-deploy-probe-missing` | 404。 |
-| `/indigo-deploy-probe-missing` | 404。 |
-| `/cloudchat/` | 404，该前缀始终由 Indigo 拒绝。 |
+| Indigo HTTP 普通路径，如 `/check?source=release` | 301，唯一的 `Location` 为 `https://indigo.rendazhangisthebest.top/check?source=release`。 |
+| Indigo HTTP `/.well-known/acme-challenge/indigo-deploy-probe` | 200，无 `Location`，正文与上述 `printf` 输出逐字节相同。 |
+| Indigo HTTP `/.well-known/acme-challenge/indigo-deploy-probe-missing` | 404。 |
+| Indigo HTTPS `/` | 域名及证书链验证通过，200、无 `Location`，正文含 `indigo-placeholder-v1`。 |
+| Indigo HTTPS `/indigo-deploy-probe-missing`、`/cloudchat/` | 均返回 404。 |
+| 个人站 www 和裸域 HTTPS `/` | www 直接 200，正文没有 Indigo 标记。裸域直接 301，`Location` 为 `https://www.rendazhang.com/`。 |
+| 未知 HTTP Host、同时使用未知 SNI/Host 的 HTTPS | 普通请求直接 301 到个人站 www，保留路径和查询串。未知及无 SNI 的 TLS 握手均出示个人站默认证书。 |
 
-发布检查还要求个人站 www 的 HTTPS 首页直接 200、无 `Location` 且不含 Indigo 标记，裸域 HTTPS 首页首跳 301 到 `https://www.rendazhang.com/`。同时确认个人站默认 HTTP 对普通未匹配 Host 仍直接 301，`Location` 为 `https://www.rendazhang.com` 加原路径及查询串。个人站原有页面、后端和 iframe 检查继续执行。
+比对默认证书时，可用 `openssl s_client -connect 127.0.0.1:443` 分别加上 `-servername rendazhang.com`、`-servername unmatched.invalid` 和 `-noservername`，将各自叶证书交给 `openssl x509 -noout -sha256 -fingerprint`。三个指纹应相同。个人站原有页面、后端和 iframe 检查继续执行。
 
-Indigo 首跳或探针异常时见[双站排查说明](TROUBLESHOOTING.md#indigo-http-checks)。若配置发布失败，保留对应提交的工作流日志，通过新的修正或 revert 提交重新发布，再验收两个站点。
+<a name="indigo-renewal"></a>
+
+**仅针对 Indigo 的续期与重载**
+
+既有 `certbot.timer` 继续轮询各自的续期配置。Indigo 的 authenticator 应为 `webroot`，验证目录为 `/var/www/acme-indigo`。主机运维维护可执行文件 `/etc/letsencrypt/renewal-hooks/deploy/50-indigo-reload-nginx`，由 root 拥有，仅 root 可写。下例中路径末段须与实际 Certificate Name 一致。
+
+```sh
+#!/bin/sh
+set -eu
+[ "${RENEWED_LINEAGE:-}" = "/etc/letsencrypt/live/indigo.rendazhangisthebest.top" ] || exit 0
+/usr/sbin/nginx -t
+/usr/bin/systemctl reload nginx
+/usr/bin/logger -t certbot-indigo -- 'nginx config test passed; graceful reload succeeded'
+```
+
+其他 lineage 成功续期时，该脚本直接退出。Indigo 匹配时，配置检查通过后才执行平滑重载，命令成功后才写入固定日志。主机运维在 HTTPS 就绪后仅演练 Indigo，以下命令中的名称以签发结果为准。
+
+```bash
+cert_name=indigo.rendazhangisthebest.top
+started_at=$(date --iso-8601=seconds)
+sudo certbot renew --cert-name "$cert_name" --dry-run --run-deploy-hooks
+sudo journalctl -t certbot-indigo --since "$started_at" --no-pager
+sudo journalctl -u nginx --since "$started_at" --no-pager
+systemctl is-active nginx certbot.timer
+```
+
+验收时核对本次 Indigo 模拟续期成功、同一窗口出现钩子成功记录与 Nginx 重载日志，并复测两个站点的 TLS、页面与首跳。该演练使用 ACME 测试环境，deploy hook 让 Nginx 重新加载当前有效的生产证书。实际定时续期后，再比对 Indigo 在盘和握手叶证书的 SHA-256 指纹与新有效期。[Certbot 续期说明](https://eff-certbot.readthedocs.io/en/stable/using.html#renewing-certificates)
+
+证书、探针或首跳异常见[双站排查说明](TROUBLESHOOTING.md#indigo-http-checks)。若配置发布失败，保留精确提交对应的工作流日志，通过新的修正或 revert 提交恢复已验证的 HTTP 阶段，再检查个人站和公网 ACME 验证文件。
 
 ---
 

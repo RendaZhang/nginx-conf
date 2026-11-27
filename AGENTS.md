@@ -10,8 +10,8 @@ document.
 
 ## Project Role
 
-- This repository mirrors the production Nginx configuration for
-  `www.rendazhang.com` and defines the proposed named HTTP site for Indigo.
+- This repository manages the personal site's Nginx configuration and the named
+  HTTP and HTTPS virtual hosts for `indigo.rendazhangisthebest.top`.
 - It documents reverse proxy, static serving, TLS, CSP/security headers, cache
   behavior, and small-server operations.
 - Related repositories:
@@ -66,17 +66,20 @@ document.
 - Static frontend files are served from `/var/www/html`, but that directory is
   deployed by the frontend GitHub Actions workflow and is not this Git worktree.
 - Backend code is managed separately in `/opt/cloudchat`.
-- The Indigo HTTP proposal adds one exact IPv4 port 80 host,
-  `indigo.rendazhangisthebest.top`. Keep the personal site's default HTTP
-  listener, its two TLS blocks and its CloudChat proxy under their existing ownership.
+- Indigo's exact IPv4 HTTP host serves ACME challenges from its persistent
+  webroot and redirects ordinary requests to its own HTTPS host. The named HTTPS
+  site serves static content using Indigo's own certificate. The personal site's
+  apex owns the explicit IPv4 TLS default. Keep its certificate, redirect and
+  CloudChat routing on their existing hosts.
 - This repo owns the Indigo vhost, enablement symlink and deploy checks.
   The Indigo content maintainer owns releases under `/var/www/indigo/releases/`
   and the `current` symlink. The host operator owns the persistent ACME webroot
   at `/var/www/acme-indigo`. Keep both trees outside the personal frontend release.
-- Before merging an Indigo enablement change to `master`, confirm the page,
-  readable probe fixture, missing paths and release window with their owners.
-  After deployment, validate the first HTTP response at loopback with the Indigo Host. See the
-  [Indigo HTTP acceptance contract](docs/SERVER_RUNBOOK.md#indigo-http).
+- Before merging TLS changes, verify the public HTTP challenge and the actual
+  Indigo certificate name, SAN, validity and live paths. The host operator owns
+  the existing Certbot timer and a deploy hook scoped to that exact lineage.
+  Verify the first response on both sites, the default TLS certificate and the
+  Indigo-only renewal rehearsal. See the [Indigo runbook](docs/SERVER_RUNBOOK.md#indigo-https).
 
 ## Files That Must Not Be Published Or Overwritten
 

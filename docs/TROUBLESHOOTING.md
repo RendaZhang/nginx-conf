@@ -45,9 +45,11 @@
 
 <a name="indigo-http-checks"></a>
 
-**Indigo 具名 HTTP 首跳或 ACME 探针异常**
+**Indigo 首跳、证书与续期排查**
 
-按[运行手册](SERVER_RUNBOOK.md#indigo-http)中的地址定向发送 GET。若首跳转至个人站，检查请求的 Host、`sites-enabled/indigo.conf` 的绝对软链接及部署日志中的配置测试和重载结果。若首页 200 但标记缺失，检查 `current` 的实际目标。探针 404 时检查持久 webroot、相对路径和 Nginx 用户的读取权限。探针 200 但校验失败时，按手册核对完整字节，包括末尾一个 LF。
+普通 Indigo HTTP 请求应 301 到 Indigo 自己的 HTTPS，HTTP ACME 探针应直接返回 200。若首跳转至个人站，检查请求 Host、启用站点软链接及精确提交的重载结果。若 Indigo HTTPS 首页 200 但标记缺失，检查 SNI 和 `current` 的实际目标。探针 404 时检查持久 webroot、相对路径和读取权限。探针 200 但内容检查失败时，核对完整字节及末尾一个 LF。[双站第一跳验收](SERVER_RUNBOOK.md#indigo-https)
+
+如 Indigo 握手收到个人站证书，核对客户端 SNI 和 Indigo 的 `ssl_certificate` 路径。若未知 SNI 收到 Indigo 证书，核对个人站裸域 443 的 `default_server`。若续期成功但握手仍出示旧证书，先比对在盘与握手叶证书，再按时间检查 deploy hook 的可执行权限、实际 lineage 匹配、配置测试、重载和成功日志。[Indigo 单证书续期演练](SERVER_RUNBOOK.md#indigo-renewal)
 
 ### 涵盖问题类型
 

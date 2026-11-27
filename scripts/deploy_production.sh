@@ -198,7 +198,9 @@ check_frame_policy() {
 check_frame_policy "/"
 check_frame_policy "/deepseek_chat/"
 
-readonly INDIGO_HTTP="http://indigo.rendazhangisthebest.top"
+readonly INDIGO_HOST="indigo.rendazhangisthebest.top"
+readonly INDIGO_HTTP="http://$INDIGO_HOST"
+readonly INDIGO_HTTPS="https://$INDIGO_HOST"
 readonly INDIGO_MARKER="indigo-placeholder-v1"
 probe_dir="$(mktemp -d)"
 readonly probe_dir
@@ -226,16 +228,19 @@ check_local_route() {
   fi
 }
 
-check_local_route "$INDIGO_HTTP/" 200 ""
+check_local_route "$INDIGO_HTTP/" 301 "Location: $INDIGO_HTTPS/"
+check_local_route "$INDIGO_HTTP/indigo-deploy-probe-missing?check=indigo" 301 \
+  "Location: $INDIGO_HTTPS/indigo-deploy-probe-missing?check=indigo"
+check_local_route "$INDIGO_HTTPS/" 200 ""
 grep -Fq -- "$INDIGO_MARKER" "$probe_dir/body" || fail "Indigo homepage marker missing"
 
 check_local_route "$INDIGO_HTTP/.well-known/acme-challenge/indigo-deploy-probe" 200 ""
 cmp -s "$probe_dir/body" <(printf '%s\n' 'indigo-acme-probe-v1') ||
   fail "Indigo ACME probe content differs from the expected bytes"
 
-check_local_route "$INDIGO_HTTP/.well-known/acme-challenge/indigo-deploy-probe-missing" 404
-check_local_route "$INDIGO_HTTP/indigo-deploy-probe-missing" 404
-check_local_route "$INDIGO_HTTP/cloudchat/" 404
+check_local_route "$INDIGO_HTTP/.well-known/acme-challenge/indigo-deploy-probe-missing" 404 ""
+check_local_route "$INDIGO_HTTPS/indigo-deploy-probe-missing" 404 ""
+check_local_route "$INDIGO_HTTPS/cloudchat/" 404 ""
 
 check_local_route "http://unmatched.invalid/?check=indigo" 301 "Location: https://www.rendazhang.com/?check=indigo"
 check_local_route "https://www.rendazhang.com/" 200 ""
@@ -243,7 +248,21 @@ if grep -Fq -- "$INDIGO_MARKER" "$probe_dir/body"; then
   fail "personal homepage contains the Indigo marker"
 fi
 check_local_route "https://rendazhang.com/" 301 "Location: https://www.rendazhang.com/"
-printf 'health named_sites=passed indigo_http=passed personal_https=passed\n'
+
+local_leaf_fingerprint() {
+  # An IP-literal connection without -servername sends no SNI.
+  openssl x509 -noout -fingerprint -sha256 < <(
+    timeout 10 openssl s_client -connect 127.0.0.1:443 "$@" </dev/null 2>/dev/null
+  )
+}
+
+# The named HTTPS probes above have already verified the personal chain and name.
+personal_leaf="$(local_leaf_fingerprint -servername rendazhang.com)" || fail "personal TLS probe failed"
+unknown_leaf="$(local_leaf_fingerprint -servername unmatched.invalid)" || fail "unknown-SNI TLS probe failed"
+no_sni_leaf="$(local_leaf_fingerprint)" || fail "no-SNI TLS probe failed"
+[[ "$unknown_leaf" == "$personal_leaf" && "$no_sni_leaf" == "$personal_leaf" ]] ||
+  fail "default TLS listener did not present the personal certificate"
+printf 'health named_sites=passed indigo_http=passed indigo_https=passed personal_https=passed default_tls=passed\n'
 
 assert_blacklist_integrity
 printf 'deployment blacklist_integrity=preserved\n'

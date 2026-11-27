@@ -54,9 +54,9 @@
 | 站点 | 请求入口 | 内容与路由归属 |
 | --- | --- | --- |
 | 个人站 `rendazhang.com`、`www.rendazhang.com` | IPv4 默认 HTTP 入口将普通请求 301 到 HTTPS www，HTTPS 裸域也转至 www。 | 前端仓发布 `/var/www/html`，www 的 `/cloudchat/` 由个人站反代。 |
-| Indigo（HTTP 草案）`indigo.rendazhangisthebest.top` | 精确匹配该 Host 的 IPv4 HTTP 80，直接提供占位页。 | Indigo 内容维护者发布 `/var/www/indigo/current`，主机运维维护持久 ACME 验证目录 `/var/www/acme-indigo`。`/cloudchat/` 返回 404。 |
+| Indigo `indigo.rendazhangisthebest.top` | IPv4 HTTP 直接提供 ACME 验证文件，普通请求 301 到本域 HTTPS 并保留路径和查询串。具名 HTTPS 提供静态占位页。 | Indigo 内容维护者发布 `/var/www/indigo/current`。主机运维维护持久验证目录 `/var/www/acme-indigo` 和 Indigo 独立证书。HTTPS 的 `/cloudchat/` 返回 404。 |
 
-Indigo 的 HTTPS 与证书属于后续变更。合入前的文件约定和上线后的第一跳验收见[运行手册](docs/SERVER_RUNBOOK.md#indigo-http)。个人站实现见[静态文件服务](#static-delivery)和 [Chat 流式转发](#chat-streaming)。
+个人站裸域显式保留默认 IPv4 443 与个人站证书。两个站点的第一跳验收、默认证书检查与 Indigo 单证书续期演练见[运行手册](docs/SERVER_RUNBOOK.md#indigo-https)。个人站实现见[静态文件服务](#static-delivery)和 [Chat 流式转发](#chat-streaming)。
 
 > 重量级解决方案可参考我的云原生项目：📁 [Renda Cloud LAB](https://github.com/RendaZhang/renda-cloud-lab)
 
@@ -250,9 +250,9 @@ HTTP 404。[站点根目录](sites-available/rendazhang.conf#L57-L59) · [静态
 
 ### 证书自动化
 
-证书由 Certbot 定时续期，通常无需人工干预。
+既有 `certbot.timer` 统一调度续期，Indigo 使用自己的 webroot 验证。主机运维维护仅匹配 Indigo 证书路径的 deploy hook，签发成功后先测试配置，再重载 Nginx 并记录结果。[Indigo 续期与验收](docs/SERVER_RUNBOOK.md#indigo-renewal)
 
-具体步骤可以参考文档内容：📄 [证书自动化](https://github.com/RendaZhang/nginx-conf/blob/master/docs/MIGRATION_GUIDE.md#ssl-%E8%AF%81%E4%B9%A6%E8%AF%81%E4%B9%A6%E8%87%AA%E5%8A%A8%E5%8C%96)
+个人站迁移的历史示例见[迁移指南](docs/MIGRATION_GUIDE.md)。
 
 ### 故障排查
 
