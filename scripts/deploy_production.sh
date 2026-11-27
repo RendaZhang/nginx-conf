@@ -198,6 +198,53 @@ check_frame_policy() {
 check_frame_policy "/"
 check_frame_policy "/deepseek_chat/"
 
+readonly INDIGO_HTTP="http://indigo.rendazhangisthebest.top"
+readonly INDIGO_MARKER="indigo-placeholder-v1"
+probe_dir="$(mktemp -d)"
+readonly probe_dir
+trap 'rm -rf -- "$probe_dir"' EXIT
+
+check_local_route() {
+  local url="$1"
+  local expected_status="$2"
+  local status location_headers
+
+  # Keep the URL's Host and TLS name while connecting directly to this Nginx.
+  status="$(curl --disable --noproxy '*' --connect-to '::127.0.0.1:' \
+    --silent --show-error --no-location --connect-timeout 10 --max-time 30 \
+    --dump-header "$probe_dir/headers" --output "$probe_dir/body" \
+    --write-out '%{http_code}' "$url")" || fail "request failed: $url"
+  [[ "$status" == "$expected_status" ]] ||
+    fail "expected HTTP $expected_status, got $status: $url"
+
+  if (( $# == 3 )); then
+    # Keep a field name so even an empty or duplicate Location is detectable.
+    location_headers="$(awk 'tolower($0) ~ /^location:/ {
+      sub(/^[^:]*:[ \t]*/, ""); sub(/[ \t\r]+$/, ""); print "Location: " $0
+    }' "$probe_dir/headers")"
+    [[ "$location_headers" == "$3" ]] || fail "unexpected Location header: $url"
+  fi
+}
+
+check_local_route "$INDIGO_HTTP/" 200 ""
+grep -Fq -- "$INDIGO_MARKER" "$probe_dir/body" || fail "Indigo homepage marker missing"
+
+check_local_route "$INDIGO_HTTP/.well-known/acme-challenge/indigo-deploy-probe" 200 ""
+cmp -s "$probe_dir/body" <(printf '%s\n' 'indigo-acme-probe-v1') ||
+  fail "Indigo ACME probe content differs from the expected bytes"
+
+check_local_route "$INDIGO_HTTP/.well-known/acme-challenge/indigo-deploy-probe-missing" 404
+check_local_route "$INDIGO_HTTP/indigo-deploy-probe-missing" 404
+check_local_route "$INDIGO_HTTP/cloudchat/" 404
+
+check_local_route "http://unmatched.invalid/?check=indigo" 301 "Location: https://www.rendazhang.com/?check=indigo"
+check_local_route "https://www.rendazhang.com/" 200 ""
+if grep -Fq -- "$INDIGO_MARKER" "$probe_dir/body"; then
+  fail "personal homepage contains the Indigo marker"
+fi
+check_local_route "https://rendazhang.com/" 301 "Location: https://www.rendazhang.com/"
+printf 'health named_sites=passed indigo_http=passed personal_https=passed\n'
+
 assert_blacklist_integrity
 printf 'deployment blacklist_integrity=preserved\n'
 printf 'Production synchronization passed.\n'

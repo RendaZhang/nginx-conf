@@ -29,7 +29,7 @@
 # NGINX Troubleshooting Guide
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: August 31, 2026 (UTC+08:00)
+- **最后更新**: 2026-11-27（UTC+08:00）
 
 ---
 
@@ -42,6 +42,12 @@
 3. **根本原因** - 技术原理层面的深度分析
 4. **解决方案** - 经过验证的有效修复方案
 5. **经验总结** - 预防措施与最佳实践
+
+<a name="indigo-http-checks"></a>
+
+**Indigo 具名 HTTP 首跳或 ACME 探针异常**
+
+按[运行手册](SERVER_RUNBOOK.md#indigo-http)中的地址定向发送 GET。若首跳转至个人站，检查请求的 Host、`sites-enabled/indigo.conf` 的绝对软链接及部署日志中的配置测试和重载结果。若首页 200 但标记缺失，检查 `current` 的实际目标。探针 404 时检查持久 webroot、相对路径和 Nginx 用户的读取权限。探针 200 但校验失败时，按手册核对完整字节，包括末尾一个 LF。
 
 ### 涵盖问题类型
 

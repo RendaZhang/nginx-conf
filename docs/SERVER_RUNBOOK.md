@@ -31,7 +31,7 @@
 # 服务器配置运行手册
 
 - **作者**: 张人大 (Renda Zhang)
-- **最后更新**: July 05, 2026, 14:48 (UTC+08:00)
+- **最后更新**: 2026-11-27（UTC+08:00）
 
 ---
 
@@ -114,7 +114,7 @@ systemd + OOM
   ```
 - **主配置**：`/etc/nginx/nginx.conf`
 - **站点配置**：`/etc/nginx/sites-available/<site>`（链接至 `sites-enabled/`）
-- **反代要点**：
+- **个人站反代要点**：
   - 统一前缀：`/cloudchat/` → 后端 `127.0.0.1:5000`
   - 关闭对 API 的缓存；开启 `proxy_http_version 1.1` 与必要的头传递
 - **TLS**：`/etc/letsencrypt/live/rendazhang.com/{fullchain.pem,privkey.pem}`；自动续期任务：`certbot.timer`
@@ -122,7 +122,7 @@ systemd + OOM
 - **安全头**：通过 `snippets/security-headers.conf` 统一维护。凡是 location 内声明了 `add_header`，都要显式 include 该 snippet。
 - **CSP inline hash**：当前 Astro 7 静态前端构建的可执行 inline scripts 由 `script-src` SHA-256 hash allowlist 放行，不启用 `unsafe-inline`；`/deepseek_chat/` iframe 嵌入标记由外部同源脚本 `/js/deepseek-embed.js` 处理。前端重新构建、升级 Astro、调整 hydration 指令或新增 inline script 后，要复核浏览器 CSP console 和 Nginx hash allowlist。
 - **CSP frame policy**：首页 Chat Widget 依赖同源 iframe 加载 `/deepseek_chat/`，Credly 证书依赖 `https://www.credly.com`；`frame-src` 必须保留 `'self' https://www.credly.com`，`frame-ancestors` 必须保留 `'self'`。
-- **Canonical host**：`rendazhang.com` 与所有 HTTP 请求统一 301 到 `https://www.rendazhang.com$request_uri`。
+- **个人站 canonical host**：个人站默认 HTTP 入口的普通请求和 HTTPS 裸域请求均 301 到 `https://www.rendazhang.com$request_uri`。
 - **静态缓存**：`location ^~ /_astro/` 返回一年 immutable 缓存；通用静态资源返回 30 天 immutable 缓存。
 - **敏感路径**：隐藏文件默认 404，保留 `/.well-known/` 标准路径。
 - **黑名单文件**：`/etc/nginx/ip-blacklist.conf` 是服务器本地运行态配置，已加入 `.gitignore`，不得通过 Git 发布覆盖。
@@ -155,6 +155,38 @@ systemd + OOM
 > ```
 >
 > 上述示例仅展示核心配置，完整文件位于 `/etc/nginx/sites-available/<site>`。
+
+<a name="indigo-http"></a>
+
+**Indigo 首次启用 IPv4 HTTP（草案）**
+
+本阶段仅为 `indigo.rendazhangisthebest.top` 增加具名 HTTP 入口。个人站继续拥有 80 的默认入口、现有 443 与 CloudChat。Indigo 的 HTTPS、证书与后端分别留待后续阶段。Draft PR 只运行 CI，合入 `master` 会触发生产交付。
+
+| 合入前由谁确认 | 必须准备的资源 |
+| --- | --- |
+| Indigo 内容维护者 | `/var/www/indigo/current` 指向 `/var/www/indigo/releases/<release>`，`/var/www/indigo/current/index.html` 含唯一标记 `indigo-placeholder-v1`。发布、切换和清理仅在 Indigo 内容树内进行。 |
+| 主机运维 | 持久文件 `/var/www/acme-indigo/.well-known/acme-challenge/indigo-deploy-probe` 的内容与 `printf '%s\n' 'indigo-acme-probe-v1'` 输出逐字节一致（ASCII，末尾恰好一个 LF）。切换内容版本时保留该文件。Nginx 运行用户应能遍历两个目录树并读取首页与探针。 |
+| 入口维护者 | 仓库管理 `sites-available/indigo.conf`、对应启用软链接和 HTTP 检查。确认下表两个缺失文件确实不存在，并在内容就绪、发布负责人和窗口确认后合入。发布流水线只校验这些文件，预置目录和内容由相应维护者负责。 |
+
+经授权发布后，从源站回环地址发送 GET，保留准确 Host。以下首页请求会显示第一跳状态、响应头和正文。
+
+```bash
+indigo_host=indigo.rendazhangisthebest.top
+curl --disable --noproxy '*' --no-location --resolve "${indigo_host}:80:127.0.0.1" \
+  --silent --show-error --include "http://${indigo_host}/"
+```
+
+| Indigo HTTP 请求路径 | 第一跳验收 |
+| --- | --- |
+| `/` | 直接 200、无 `Location`，正文含 `indigo-placeholder-v1`。 |
+| `/.well-known/acme-challenge/indigo-deploy-probe` | 直接 200、无 `Location`，正文与上述 `printf` 输出逐字节相同。 |
+| `/.well-known/acme-challenge/indigo-deploy-probe-missing` | 404。 |
+| `/indigo-deploy-probe-missing` | 404。 |
+| `/cloudchat/` | 404，该前缀始终由 Indigo 拒绝。 |
+
+发布检查还要求个人站 www 的 HTTPS 首页直接 200、无 `Location` 且不含 Indigo 标记，裸域 HTTPS 首页首跳 301 到 `https://www.rendazhang.com/`。同时确认个人站默认 HTTP 对普通未匹配 Host 仍直接 301，`Location` 为 `https://www.rendazhang.com` 加原路径及查询串。个人站原有页面、后端和 iframe 检查继续执行。
+
+Indigo 首跳或探针异常时见[双站排查说明](TROUBLESHOOTING.md#indigo-http-checks)。若配置发布失败，保留对应提交的工作流日志，通过新的修正或 revert 提交重新发布，再验收两个站点。
 
 ---
 
